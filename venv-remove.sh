@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -be
+set +e
 
 while true; do
   read -r -p 'Do you want to continue? n/Y ' pred
@@ -10,17 +10,16 @@ while true; do
     esac
 done
 
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-VENV_ROOT_FOLDER=("__pycache__" "Include" "Lib" "Scripts" "src/__pycache__")
-VENV_ROOT_FILE=("pyvenv.cfg")
-
-for fil in "${VENV_ROOT_FILE[@]}"; do
-  echo "removing file: $fil"
-  rm -f "$SCRIPT_DIR/$fil"
-done
-for fol in "${VENV_ROOT_FOLDER[@]}"; do
-  echo "removing folder: $fol"
-  rm -rf "$SCRIPT_DIR/$fol"
-done
+rm -rf "__pycache__"
+rm -rf "Include"
+rm -rf "include"
+rm -rf "Lib"
+rm -rf "lib"
+rm -rf "lib64"
+rm -rf "Scripts"
+rm -rf "bin"
+rm -rf "share"
+rm -rf "src/__pycache__"
+rm -f "pyvenv.cfg"
 
 read -p "Press any key to resume ..."
