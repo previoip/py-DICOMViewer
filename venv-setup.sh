@@ -9,6 +9,6 @@ PY_VER="$(python --version)"
 echo "using $PY_VER"
 
 python -m venv "$SCRIPT_DIR"
-python -m pip install -r "$SCRIPT_DIR\\requirements.txt"
+python -m pip install -r "$SCRIPT_DIR/requirements.txt"
 
 read -p "Press any key to resume ..."

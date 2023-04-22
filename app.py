@@ -30,7 +30,7 @@ class CApp:
         if event.type == SDL_QUIT:
             self._running = False
             return 1
-        
+
         else:
             return 0
 
@@ -48,7 +48,6 @@ class CApp:
 
     def onExecute(self):
         if self.onInit() != 0:
-            print('init failed')
             return -1
 
         event = SDL_Event()
