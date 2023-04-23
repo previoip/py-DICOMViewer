@@ -22,8 +22,3 @@ deactivate
 
 echo
 read -p "Press any key to resume ..."
-
-
-
-
-

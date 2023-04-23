@@ -4,10 +4,10 @@ set +e
 
 while true; do
   read -r -p 'Do you want to continue? n/Y ' pred
-    case "$pred" in
-        [Y]) break;;
-        *) exit 0;;
-    esac
+  case "$pred" in
+      [Y]) break;;
+      *) exit 0;;
+  esac
 done
 
 rm -rf "__pycache__"

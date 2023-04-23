@@ -1,7 +1,7 @@
 from constants import *
 from sdl2 import *
 from ctypes import byref
-# from src.confighandler import ConfigHandler, ConfigType
+# from src.confighandler import ConfigType
 
 
 class CApp:
@@ -10,6 +10,7 @@ class CApp:
         self._sdl_window = None
 
     def onInit(self) -> int: 
+
         if SDL_Init(APP_SDL_INIT_FLAGS) != 0:
             return -1
 

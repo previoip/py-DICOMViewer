@@ -1,5 +1,5 @@
 from sdl2 import *
-
+from src.confighandler import ConfigType, newConfig, config_pool
 
 APP_NAME                = b'foobar'
 APP_SDL_INIT_FLAGS      = SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS

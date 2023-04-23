@@ -1,7 +1,12 @@
 from enum import Enum, auto
-from uuid import uuid4
-from metaclass_enum import EnumComparable
+from hashlib import sha1
 import os
+import sys
+from src.metaclass_enum import EnumComparable
+from src.file_util import raiseFileMode, createFileIfNotExist
+from src.hash_util import sha1_to_hex
+
+config_pool = []
 
 class ConfigType(Enum, metaclass=EnumComparable):
     XML  = auto()
@@ -9,68 +14,88 @@ class ConfigType(Enum, metaclass=EnumComparable):
     INI  = auto()
 
 class BaseConfigContainer:
-    def __init__(self, _type, _id, path):
-        if not os.access(self._path, os.W_OK | os.R_OK):
-            raise NameError(f'invalid file mode on config file: {path}')
 
-        self._type  = _type
-        self._id    = _id
-        self._path  = path
-        self._data  = {}
-        self._uuid  = uuid4()
+    @staticmethod
+    def id_to_uid(string_id):
+        return sha1_digest(
+            bytes(
+                string_id,
+                encoding=sys.getfilesystemencoding()
+            )
+        )
+
+
+    def __init__(self, _type, _id, filepath):
+        createFileIfNotExist(filepath)
+        raiseFileMode(filepath)
+        self.id         = _id
+        self._type      = _type
+        self.filepath   = filepath
+        self.data       = None
+        self.uid        = BaseConfigContainer.id_to_uid(self.id)
 
     def load(self):
         self._loader()
-    
+
+    def save(self):
+        with open(self.filepath, 'wb') as fo:
+            fo.write(self._unloader())
+
+    def _loader(self):
+        raise NotImplementedError('loader is not yet implemented')
+
+    def _unloader(self) -> bytes:
+        raise NotImplementedError('unloader is not yet implemented')
+
+
+class ConfigContainerXML(BaseConfigContainer):
+    def __init__(self, _id, filepath):
+        super().__init__(ConfigType.XML, _id,  filepath)
+
     def _loader(self):
         ...
 
-    def save(self):
-        self._unloader()
-
-    def _unloader(self):
+    def _unloader(self) -> bytes:
         ...
 
+class ConfigContainerJSON(BaseConfigContainer):
+    def __init__(self, _id, filepath):
+        super().__init__(ConfigType.JSON, _id,  filepath)
 
-class ConfigHandler:
+    def _loader(self):
+        ...
 
-    def __init__(self):
-        self._pool = {}
-        self._cfg_uuid = []
+    def _unloader(self) -> bytes:
+        ...
 
-    def iterConfigPool(self):
-        return iter(self._pool.values())
+class ConfigContainerINI(BaseConfigContainer):
+    def __init__(self, _id, filepath):
+        super().__init__(ConfigType.INI, _id,  filepath)
 
-    def getUUIDs(self):
-        return list(map(lambda x: x._uuid, self.iterConfigPool()))
+    def _loader(self):
+        ...
 
-    def getIDs(self):
-        return list(map(lambda x: x._id, self.iterConfigPool()))
+    def _unloader(self) -> bytes:
+        ...
 
-    def addConfigContainer(self, config):
-        if config._uuid in map(lambda x: x._uuid, self.iterConfigPool()):
-            return
-        self._pool[config._uuid] = config
-        self._cfg_uuid.append(config._uuid)
+def isConfigExistById(_id):
+    return _id in map(lambda x: x.id, config_pool)
 
-    def newConfig(self, config_type: ConfigType):
+def newConfig(_type: ConfigType, _id: str, filepath):
+    if _type not in ConfigType:
+        raise NotImplementedError('Container is not yet implemented')
 
-        config_instance = None
-        if not config_type in ConfigType:
-            return None
+    elif isConfigExistById(_id):
+        raise NameError(f'Container id already exist: {_id}')
+    elif _type == ConfigType.XML:
+        c = ConfigContainerXML(_id, filepath)
+    elif _type == ConfigType.JSON:
+        c = ConfigContainerJSON(_id, filepath)
+    elif _type == ConfigType.INI:
+        c = ConfigContainerINI(_id, filepath)
+    else:
+        raise NameError('Could not create config file')
 
-        elif config_type == ConfigType.INI:
-            config_instance = None
+    config_pool.append(c)
 
-        elif config_type == ConfigType.JSON:
-            config_instance = None
-
-        elif config_type == ConfigType.XML:
-            config_instance = None
-
-        self.addConfigContainer(config_instance)
-
-        return config_instance
-
-if __name__ == '__main__':
-    print(os.access('config.xml', os.W_OK | os.R_OK))
+    return c
