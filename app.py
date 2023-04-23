@@ -1,4 +1,4 @@
-from constants import *
+from src.constants import *
 from sdl2 import *
 from ctypes import byref
 # from src.confighandler import ConfigType

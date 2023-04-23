@@ -3,14 +3,17 @@ from hashlib import sha1
 import os
 import sys
 from json import (
-    dump as json_dump,
+    dumps as json_dumps,
     load as json_load
 )
+from xml.etree import ElementTree as xml_et
+
 from src.metaclass_enum import EnumComparable
 from src.file_util import raiseFileMode, createFileIfNotExist, ensureExtension, checkFileExtension
 from src.hash_util import sha1_digest
 
-config_pool = []
+# config pool for batch processes
+_config_pool = []
 
 class ConfigType(Enum, metaclass=EnumComparable):
     XML  = auto()
@@ -57,10 +60,10 @@ class ConfigContainerXML(_BaseConfigContainer):
         super().__init__(ConfigType.XML, _id,  filepath)
 
     def _loader(self):
-        ...
+        self.data = xml_et.parse(self.filepath)
 
     def _unloader(self) -> bytes:
-        ...
+        return bytes(xml_et.tostring(self.data), encoding='us-ascii')
 
 class ConfigContainerJSON(_BaseConfigContainer):
     def __init__(self, _id, filepath):
@@ -68,30 +71,34 @@ class ConfigContainerJSON(_BaseConfigContainer):
         super().__init__(ConfigType.JSON, _id,  filepath)
 
     def _loader(self):
-        ...
+        self.data = json_load(self.filepath)
 
     def _unloader(self) -> bytes:
-        ...
+        return bytes(json_dumps(self.data), encoding='utf-8')
 
 class ConfigContainerINI(_BaseConfigContainer):
     def __init__(self, _id, filepath):
         filepath = ensureExtension(filepath, 'ini')
         super().__init__(ConfigType.INI, _id,  filepath)
 
-    def _loader(self):
-        ...
+    # def _loader(self):
+    #     ...
 
-    def _unloader(self) -> bytes:
-        ...
+    # def _unloader(self) -> bytes:
+    #     ...
+
+def getConfigPoolIds():
+    return list(map(lambda x: x.id, _config_pool))
+
+def getConfigById(_id):
+    return _config_pool[getConfigPoolIds().index(_id)]
 
 def isConfigExistById(_id):
-    return _id in map(lambda x: x.id, config_pool)
-
+    return _id in map(lambda x: x.id, _config_pool)
 
 def newConfig(_type: ConfigType, _id: str, filepath):
     if _type not in ConfigType:
         raise NotImplementedError('Container is not yet implemented/overridden')
-
     elif isConfigExistById(_id):
         raise NameError(f'Container id already exist: {_id}')
     elif _type == ConfigType.XML:
@@ -102,9 +109,7 @@ def newConfig(_type: ConfigType, _id: str, filepath):
         c = ConfigContainerINI(_id, filepath)
     else:
         raise NameError('Could not create config file')
-
-    config_pool.append(c)
-
+    _config_pool.append(c)
     return c
 
 def newConfigFromPath(_id: str, filepath):
@@ -116,3 +121,8 @@ def newConfigFromPath(_id: str, filepath):
         return newConfig(ConfigType.INI, _id, filepath)
     else:
         raise NotImplementedError('config container for file is not yet implemented')
+
+def flushConfigPool():
+    c = _config_pool.copy()
+    _config_pool.clear()
+    return c

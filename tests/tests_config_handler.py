@@ -1,42 +1,39 @@
 import os
-from unittest import TestCase
+import unittest
 
 
 # unittest for package src.confighandler
 from src.config_handler import (
     ConfigType, 
-    config_pool, 
-    newConfig
+    newConfig,
+    _config_pool
 )
 
-class Test_ConfigHandler(TestCase):
-    def setUp(self):
-        self.tgt_prebuilt_xml   = 'foo.xml'
-        self.tgt_prebuilt_json  = 'foo.json'
-        self.tgt_prebuilt_ini   = 'foo.ini'
+# globals
+script_dir = os.path.dirname(__file__) 
 
-        self.tgt_prebuilt = [
-            self.tgt_prebuilt_xml,
-            self.tgt_prebuilt_json,
-            self.tgt_prebuilt_ini
+class TestAttrs:
+    fp_emp_xml   = os.path.join(script_dir, 'test_empty.xml')
+    fp_emp_json  = os.path.join(script_dir, 'test_empty.json')
+    fp_emp_ini   = os.path.join(script_dir, 'test_empty.ini')
+    fp_def_xml   = os.path.join(script_dir, 'test.xml')
+    fp_def_json  = os.path.join(script_dir, 'test.json')
+    fp_def_ini   = os.path.join(script_dir, 'test.ini')
+
+    def initAttrs(self):
+        self.ls_def = [
+            self.fp_def_xml,
+            self.fp_def_json,
+            self.fp_def_ini
         ]
 
-        self.tgt_prebuilt_payload_xml = """"""
-        self.tgt_prebuilt_payload_json = """"""
-        self.tgt_prebuilt_payload_ini = """"""
 
-        with open(self.tgt_prebuilt_xml, 'w') as fo:
-            fo.write(self.tgt_prebuilt_payload_xml)
-
-        with open(self.tgt_prebuilt_json, 'w') as fo:
-            fo.write(self.tgt_prebuilt_payload_json)
-
-        with open(self.tgt_prebuilt_ini, 'w') as fo:
-            fo.write(self.tgt_prebuilt_payload_ini)
-
+class Test_ConfigHandler(TestAttrs, unittest.TestCase):
+    def setUp(self):
+        self.initAttrs()
 
     def tearDown(self):
-        for fp in self.tgt_prebuilt:
+        for fp in self.ls_def:
             if os.path.exists(fp):
                 os.remove(fp)
 
@@ -45,4 +42,4 @@ class Test_ConfigHandler(TestCase):
 
 
 if __name__ == '__main__':
-    pass
+    unittest.main()
