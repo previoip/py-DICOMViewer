@@ -2,8 +2,8 @@ import os
 import unittest
 
 
-# unittest for package src.confighandler
-from src.config_handler import (
+# unittest for package src.config_manager
+from src.config_manager import (
     ConfigType, 
     newConfig,
     flushConfigPool,

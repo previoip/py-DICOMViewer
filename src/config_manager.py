@@ -1,5 +1,4 @@
 from enum import Enum, auto
-from hashlib import sha1
 import os
 import sys
 from json import (
@@ -11,6 +10,8 @@ from xml.etree import ElementTree as xml_et
 from src.metaclass_enum import EnumComparable
 from src.file_util import raiseFileMode, createFileIfNotExist, ensureExtension, checkFileExtension
 from src.hash_util import sha1_digest
+
+
 
 # config pool for batch processes
 _config_pool = []
@@ -100,7 +101,8 @@ def newConfig(_type: ConfigType, _id: str, filepath):
     if _type not in ConfigType:
         raise NotImplementedError('Container is not yet implemented/overridden')
     elif isConfigExistById(_id):
-        raise NameError(f'Container id already exist: {_id}')
+        # raise NameError(f'Container id already exist: {_id}')
+        return getConfigById(_id)
     elif _type == ConfigType.XML:
         c = ConfigContainerXML(_id, filepath)
     elif _type == ConfigType.JSON:
@@ -121,6 +123,18 @@ def newConfigFromPath(_id: str, filepath):
         return newConfig(ConfigType.INI, _id, filepath)
     else:
         raise NotImplementedError('config container for file is not yet implemented')
+
+def removeConfigFile(_id):
+    return _config_pool.pop(getConfigPoolIds().index(_id))
+
+def loadAllConfig():
+    for confc in _config_pool:
+        confx.load()
+
+def saveAllConfig():
+    for confc in _config_pool:
+        confx.save()
+
 
 def flushConfigPool():
     c = _config_pool.copy()

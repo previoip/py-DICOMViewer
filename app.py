@@ -1,7 +1,6 @@
-from src.constants import *
+from bootstrap import *
 from sdl2 import *
 from ctypes import byref
-# from src.confighandler import ConfigType
 
 
 class CApp:
@@ -11,17 +10,17 @@ class CApp:
 
     def onInit(self) -> int: 
 
-        errno = SDL_Init(APP_SDL_INIT_FLAGS)
+        errno = SDL_Init(app_sdl_init_flags)
         if errno != 0:
             return errno
 
         self._sdl_window = SDL_CreateWindow(
-            APP_NAME,
-            APP_SDL_WINDOWPOS_X,
-            APP_SDL_WINDOWPOS_Y,
-            APP_SDL_WINDOWSIZE_W,
-            APP_SDL_WINDOWSIZE_H,
-            APP_SDL_WINDOW_FLAGS
+            app_name,
+            app_sdl_windowpos_x,
+            app_sdl_windowpos_y,
+            app_sdl_windowsize_w,
+            app_sdl_windowsize_h,
+            app_sdl_window_flags
         )
 
         if not self._sdl_window:
