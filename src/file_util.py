@@ -18,8 +18,15 @@ def raiseIsFile(filepath):
 def checkFileExtension(filepath, ext):
     return str(filepath).split('.')[-1].casefold() == ext.casefold()
 
+def splitExt(filepath):
+    slices = filepath.split('.')
+    if not len(slices) > 1:
+        return filepath, ''
+    ext = slices[-1]
+    return filepath[:-(len(ext)+1)], ext
+
 def ensureExtension(filepath, ext):
-    path_tail, path_extension = filepath.split('.')
+    path_tail, path_extension = splitExt(filepath)
     if not checkFileExtension(filepath, ext):
         filepath = f'{path_tail}.{ext}'
     return filepath

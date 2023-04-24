@@ -64,7 +64,7 @@ class ConfigContainerXML(_BaseConfigContainer):
         self.data = xml_et.parse(self.filepath)
 
     def _unloader(self) -> bytes:
-        return bytes(xml_et.tostring(self.data), encoding='us-ascii')
+        return xml_et.tostring(self.data.getroot())
 
 class ConfigContainerJSON(_BaseConfigContainer):
     def __init__(self, _id, filepath):
@@ -128,13 +128,12 @@ def removeConfigFile(_id):
     return _config_pool.pop(getConfigPoolIds().index(_id))
 
 def loadAllConfig():
-    for confc in _config_pool:
-        confx.load()
+    for conf_c in _config_pool:
+        conf_c.load()
 
 def saveAllConfig():
-    for confc in _config_pool:
-        confx.save()
-
+    for conf_c in _config_pool:
+        conf_c.save()
 
 def flushConfigPool():
     c = _config_pool.copy()

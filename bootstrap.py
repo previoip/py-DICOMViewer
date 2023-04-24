@@ -15,3 +15,7 @@ app_sdl_windowpos_x     = SDL_WINDOWPOS_UNDEFINED
 app_sdl_windowpos_y     = SDL_WINDOWPOS_UNDEFINED
 app_sdl_window_flags    = SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN
 
+# program defaults
+app_path_storage_temp       = './tempstorage'
+app_path_storage_resource   = './Resource'
+app_fpath_config            = './config.xml'
