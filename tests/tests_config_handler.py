@@ -6,6 +6,7 @@ import unittest
 from src.config_handler import (
     ConfigType, 
     newConfig,
+    flushConfigPool,
     _config_pool
 )
 
@@ -21,11 +22,23 @@ class TestAttrs:
     fp_def_ini   = os.path.join(script_dir, 'test.ini')
 
     def initAttrs(self):
+        self.ls_a = []
+
         self.ls_def = [
             self.fp_def_xml,
             self.fp_def_json,
             self.fp_def_ini
         ]
+
+        self.ls_a.extend(self.ls_def)
+
+        self.ls_emp = [
+            self.fp_emp_xml,
+            self.fp_emp_json,
+            self.fp_emp_ini
+        ]
+
+        self.ls_a.extend(self.ls_emp)
 
 
 class Test_ConfigHandler(TestAttrs, unittest.TestCase):
@@ -33,9 +46,11 @@ class Test_ConfigHandler(TestAttrs, unittest.TestCase):
         self.initAttrs()
 
     def tearDown(self):
-        for fp in self.ls_def:
+
+        for fp in self.ls_a:
             if os.path.exists(fp):
                 os.remove(fp)
+        flushConfigPool()
 
     def test_class_initiation(self):
         pass

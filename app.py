@@ -11,8 +11,9 @@ class CApp:
 
     def onInit(self) -> int: 
 
-        if SDL_Init(APP_SDL_INIT_FLAGS) != 0:
-            return -1
+        errno = SDL_Init(APP_SDL_INIT_FLAGS)
+        if errno != 0:
+            return errno
 
         self._sdl_window = SDL_CreateWindow(
             APP_NAME,
@@ -22,6 +23,9 @@ class CApp:
             APP_SDL_WINDOWSIZE_H,
             APP_SDL_WINDOW_FLAGS
         )
+
+        if not self._sdl_window:
+            return -1
 
         return 0
 
@@ -40,7 +44,6 @@ class CApp:
 
     def onRender(self):
         ...
-
 
     def onCleanup(self): 
         SDL_DestroyWindow(self._sdl_window)

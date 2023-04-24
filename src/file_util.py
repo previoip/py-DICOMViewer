@@ -16,7 +16,7 @@ def raiseIsFile(filepath):
         raise NameError(f'target path is not a file: {filepath}')
 
 def checkFileExtension(filepath, ext):
-    return str(filepath).split('.')[-1].casefold().lower() == ext.casefold().lower()
+    return str(filepath).split('.')[-1].casefold() == ext.casefold()
 
 def ensureExtension(filepath, ext):
     path_tail, path_extension = filepath.split('.')
