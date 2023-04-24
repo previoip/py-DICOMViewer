@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set +e
+set -e
 
 SAMPLE_URL="https://medimodel.com/wp-content/uploads/2021/03/2_skull_ct.zip"
 SAMPLE_FNAME=$( basename $SAMPLE_URL .zip)

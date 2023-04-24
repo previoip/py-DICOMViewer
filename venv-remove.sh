@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set +e
+set -e
 
 while true; do
   read -r -p 'Do you want to continue? n/Y ' pred
