@@ -1,4 +1,6 @@
-import app, sys
+from app import AppQT 
+import sys
 
 if __name__ == '__main__':
-    sys.exit(app.main())
+    app = AppQT(sys.argv)
+    sys.exit(app.onExec())

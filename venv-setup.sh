@@ -10,6 +10,9 @@ PY_PACKAGE_VENV=$(python.exe -m pip list | grep "virtualenv")
 echo "using python:" $PY_VER
 echo "using venv:" $PY_PACKAGE_VENV
 
+echo "updating pip"
+python.exe -m pip install --upgrade pip
+
 if [ -n $PY_PACKAGE_VENV ]; then
   echo "venv is not installed. Installing venv"
   python.exe -m pip install virtualenv

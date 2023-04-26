@@ -66,6 +66,26 @@ class ConfigContainerXML(_BaseConfigContainer):
     def _unloader(self) -> bytes:
         return xml_et.tostring(self.data.getroot())
 
+    @staticmethod
+    def setConfigValue(
+            conf_eltree_inst,
+            conf_eltree_key,
+            value
+        ):
+        conf_eltree_inst.set(conf_eltree_key, str(value))
+
+    @staticmethod
+    def assignConfigToInstAttr(
+            obj_inst,
+            obj_attr,
+            conf_eltree_inst,
+            conf_eltree_key,
+            cast_to_fn = lambda x: x
+        ):
+        if conf_eltree_inst.get(conf_eltree_key) is None:
+            return
+        setattr(obj_inst, obj_attr, cast_to_fn(conf_eltree_inst.get(conf_eltree_key)))
+
 class ConfigContainerJSON(_BaseConfigContainer):
     def __init__(self, _id, filepath):
         filepath = ensureExtension(filepath, 'json')
