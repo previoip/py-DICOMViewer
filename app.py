@@ -8,7 +8,7 @@ from src.gui.window import App_QMainWindow
 from src.backends.data_model import App_QtDM_DicomDir
 
 
-class CApp:
+class QtApp:
     def __init__(self, *args, **kwargs):
         self._qt_app                = QApplication(list(args))
         self._qt_win                = App_QMainWindow()
