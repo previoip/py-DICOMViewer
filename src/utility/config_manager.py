@@ -7,9 +7,9 @@ from json import (
 )
 from xml.etree import ElementTree as xml_et
 
-from src.metaclass_enum import EnumComparable
-from src.file_util import raiseFileMode, createFileIfNotExist, ensureExtension, checkFileExtension
-from src.hash_util import sha1_digest
+from src.utility.metaclass_enum import EnumComparable
+from src.utility.file_util import raiseFileMode, createFileIfNotExist, ensureExtension, checkFileExtension
+from src.utility.hash_util import sha1_digest
 
 
 

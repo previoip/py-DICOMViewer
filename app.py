@@ -5,10 +5,12 @@ from PyQt5.QtWidgets import (
 )
 from bootstrap import *
 from src.gui.window import App_QMainWindow
+from src.backends.data_model import App_QtDM_DicomDir
 
-class AppQT:
-    def __init__(self, argv):
-        self._qt_app                = QApplication(argv)
+
+class CApp:
+    def __init__(self, *args, **kwargs):
+        self._qt_app                = QApplication(list(args))
         self._qt_win                = App_QMainWindow()
         # self._app_config_default    = newConfigFromPath('default', app_fpath_config)
     

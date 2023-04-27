@@ -10,6 +10,7 @@
 - https://github.com/pydicom/pydicom
 - https://medimodel.com/sample-dicom-files/human_skull_2_dicom_file/
 - https://doc.qt.io/qtforpython-5/
+- https://github.com/pyqt/examples
 
 ## Further Read
 
