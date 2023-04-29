@@ -7,10 +7,12 @@ from bootstrap import *
 from src.gui.window import App_QMainWindow
 from src.backends.data_model import QtDM_Dicom, I_DicomNode
 
+main_window_design_file='./src/gui/ui/mainwindow.ui'
+
 class QtApp:
     def __init__(self, *args, **kwargs):
         self._qt_app                = QApplication(list(args))
-        self._qt_win                = App_QMainWindow()
+        self._qt_win                = App_QMainWindow(main_window_design_file)
         self._dicom_data_model      = QtDM_Dicom()
 
     def onInit(self):
@@ -20,8 +22,6 @@ class QtApp:
         self._qt_win.setDataModelToWidget('treeView', self._dicom_data_model)
 
         self._dicom_data_root       = self._dicom_data_model._root
-        testnode_1 = I_DicomNode('test_whooey1', None, self._dicom_data_root)
-        testnode_2 = I_DicomNode('test_whooey2', None, self._dicom_data_root)
 
     def onExec(self):
         self.onInit()

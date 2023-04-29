@@ -20,7 +20,7 @@ from bootstrap import (
 from src.backends.data_model import (
     QtDM_Dicom,
     I_DicomNode,
-    parseDicomDataset
+    parseDicomFromPath
 )
 
 from pydicom import (
@@ -30,8 +30,8 @@ from pydicom import (
 
 
 class App_QMainWindow(QMainWindow):
-    def __init__(self, *args, design_file='./src/gui/ui/mainwindow.ui', **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, design_file='./src/gui/ui/mainwindow.ui'):
+        super().__init__()
         uic.loadUi(design_file, self)
         self._initUI()
         self._active_model = {}
@@ -67,38 +67,36 @@ class App_QMainWindow(QMainWindow):
     def _invoke_QFD_FileDialogRoot(self):
         options = QFileDialog.Options()
         # options |= QFileDialog.DontUseNativeDialog
-        file_name, _ = QFileDialog.getOpenFileName(
+        file_path, _ = QFileDialog.getOpenFileName(
             self,
             "Open File", 
             "",
             "All Files (*);;DICOM Files (*.dcm)", 
             options=options
         )
-        if file_name:
-            # self.model.dcmread(file_name)
-            print(file_name)
-            root = self._active_model['treeView']._root
-            root.clear()
-            ds = dcmread(file_name)
-            parseDicomDataset(ds, root)
+        if file_path:
+            root = self._active_model['treeView'].getRootNode()
+            # root.clear()
+            parseDicomFromPath(file_path, root)
+            print('needs update')
             self._active_model['treeView'].layoutChanged.emit()
 
 
     def _invoke_QFD_FileDialogTestPreset(self):
         options = QFileDialog.Options()
         # options |= QFileDialog.DontUseNativeDialog
-        file_name, _ = QFileDialog.getOpenFileName(
+        file_path, _ = QFileDialog.getOpenFileName(
             self,
             "Open File", 
             test_preset_data_path,
             "All Files (*);;DICOM Files (*.dcm)", 
             options=options
         )
-        if file_name:
-            root = self._active_model['treeView']._root
-            root.clear()
-            ds = dcmread(file_name)
-            parseDicomDataset(ds, root)
+        if file_path:
+            root = self._active_model['treeView'].getRootNode()
+            # root.clear()
+            parseDicomFromPath(file_path, root)
+            print('needs update', file_path)
             self._active_model['treeView'].layoutChanged.emit()
 
     def centerWinPos(self):

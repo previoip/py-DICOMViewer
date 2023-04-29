@@ -2,6 +2,7 @@ from pathlib import Path
 from bootstrap import *
 import os
 
+from pydicom import dcmread
 from pydicom.dataset import (
     Dataset,
     FileDataset,
@@ -18,7 +19,6 @@ from PyQt5.QtCore import (
 )
 
 
-
 class I_DicomNode:
     def __init__(self, name, ref=None, parent=None):
         self.name = name
@@ -30,7 +30,7 @@ class I_DicomNode:
         if isinstance(parent, self.__class__) and parent is not None:
             parent.addChild(self)
 
-    def parent(self):
+    def getParent(self):
         return self._parent
 
     def index(self):
@@ -51,17 +51,23 @@ class I_DicomNode:
         for child in self._children:
             if isinstance(child, self.__class__):
                 child.clear()
-            del child
         self._children.clear()
 
+
+
+
+
 class QtDM_Dicom(QAbstractItemModel):
-    def __init__(self, dicom_node=I_DicomNode('Empty'), parent=None):
+    def __init__(self, dicom_node=I_DicomNode('root')):
         super().__init__()
         self._root = dicom_node
 
+    def getRootNode(self):
+        return self._root
+
     def parent(self, index):
         dicom_node = index.internalPointer()
-        parent_node = dicom_node.parent()
+        parent_node = dicom_node.getParent()
 
         if parent_node == self._root:
             return QModelIndex()
@@ -96,10 +102,31 @@ class QtDM_Dicom(QAbstractItemModel):
             return dicom_node.name
 
 
-def parseDicomDataset(ds, parent=I_DicomNode('root')):
-    for elem in ds:
-        node = I_DicomNode(f'{elem.VR}, {elem.value}', elem, parent)
-        if isinstance(elem, Dataset):
-            parseDicomDataset(elem, node)
-        elif isinstance(elem, Sequence):
-            parseDicomDataset(seq, node)
+def parseDicomFromPath(path, dicom_node=I_DicomNode('root')):
+    dicom_node.clear()
+    ds = dcmread(path)
+
+    def recurse(ds, parent):
+        ds.ensure_file_meta()
+        name = fetchDatasetRepr(ds)
+        trunk = I_DicomNode(name, ds, parent)
+        for elem in ds:
+            if elem.VR == 'SQ':
+                [recurse(item, trunk) for item in elem.value]
+            else:
+                pass
+
+    recurse(ds, dicom_node)
+
+def fetchDatasetRepr(ds):
+    if hasattr(ds, 'filename'):
+        return os.path.basename(ds.filename)
+    file_meta = ds.file_meta
+    media_storage_class_sop_uid = file_meta.get('MediaStorageSOPClassUID', None)
+    if media_storage_class_sop_uid is not None:
+        return media_storage_class_sop_uid.name
+
+    if hasattr(ds, 'PatientID'):
+        return 'PatientID: ' + ds.PatientID
+
+    return 'undefined'
