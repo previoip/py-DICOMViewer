@@ -5,19 +5,23 @@ from PyQt5.QtWidgets import (
 )
 from bootstrap import *
 from src.gui.window import App_QMainWindow
-from src.backends.data_model import App_QtDM_DicomDir
-
+from src.backends.data_model import QtDM_Dicom, I_DicomNode
 
 class QtApp:
     def __init__(self, *args, **kwargs):
         self._qt_app                = QApplication(list(args))
         self._qt_win                = App_QMainWindow()
-        # self._app_config_default    = newConfigFromPath('default', app_fpath_config)
-    
+        self._dicom_data_model      = QtDM_Dicom()
+
     def onInit(self):
         self._qt_win.setMinimumSize(app_window_min_width, app_window_min_height)
         self._qt_win.setWindowTitle(app_name.decode(system_encoding))
         self._qt_win.centerWinPos()
+        self._qt_win.setDataModelToWidget('treeView', self._dicom_data_model)
+
+        self._dicom_data_root       = self._dicom_data_model._root
+        testnode_1 = I_DicomNode('test_whooey1', None, self._dicom_data_root)
+        testnode_2 = I_DicomNode('test_whooey2', None, self._dicom_data_root)
 
     def onExec(self):
         self.onInit()

@@ -27,7 +27,7 @@ app_sdl_window_flags        = SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN
 
 # pydicom defaults
 from pydicom.data import get_testdata_files
-test_preset_data_root       = os.path.commonpath(get_testdata_files())
+test_preset_data_path       = os.path.commonpath(get_testdata_files())
 
 
 # inits

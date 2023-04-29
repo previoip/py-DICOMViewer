@@ -10,17 +10,36 @@ from PyQt5.QtWidgets import (
     QAction,
     QMessageBox,
     QFileDialog,
+    QDirModel
 )
+
 from bootstrap import (
     app_prefetch_license, 
-    test_preset_data_root,
+    test_preset_data_path,
 )
+from src.backends.data_model import (
+    QtDM_Dicom,
+    I_DicomNode,
+    parseDicomDataset
+)
+
+from pydicom import (
+    dcmread,
+)
+
+
 
 class App_QMainWindow(QMainWindow):
     def __init__(self, *args, design_file='./src/gui/ui/mainwindow.ui', **kwargs):
         super().__init__(*args, **kwargs)
         uic.loadUi(design_file, self)
         self._initUI()
+        self._active_model = {}
+
+    def setDataModelToWidget(self, widget_selector, model):
+        getattr(self, widget_selector).setModel(model)
+        self._active_model[widget_selector] = model
+
 
     def _initUI(self):
         self._initMenuBars()
@@ -47,30 +66,40 @@ class App_QMainWindow(QMainWindow):
 
     def _invoke_QFD_FileDialogRoot(self):
         options = QFileDialog.Options()
-        options |= QFileDialog.DontUseNativeDialog
-        fileName, _ = QFileDialog.getOpenFileName(
+        # options |= QFileDialog.DontUseNativeDialog
+        file_name, _ = QFileDialog.getOpenFileName(
             self,
-            "QFileDialog.getOpenFileName()", 
+            "Open File", 
             "",
             "All Files (*);;DICOM Files (*.dcm)", 
             options=options
         )
-        if fileName:
-            print(fileName)
+        if file_name:
+            # self.model.dcmread(file_name)
+            print(file_name)
+            root = self._active_model['treeView']._root
+            root.clear()
+            ds = dcmread(file_name)
+            parseDicomDataset(ds, root)
+            self._active_model['treeView'].layoutChanged.emit()
+
 
     def _invoke_QFD_FileDialogTestPreset(self):
         options = QFileDialog.Options()
-        options |= QFileDialog.DontUseNativeDialog
-        fileName, _ = QFileDialog.getOpenFileName(
+        # options |= QFileDialog.DontUseNativeDialog
+        file_name, _ = QFileDialog.getOpenFileName(
             self,
-            "QFileDialog.getOpenFileName()", 
-            test_preset_data_root,
+            "Open File", 
+            test_preset_data_path,
             "All Files (*);;DICOM Files (*.dcm)", 
             options=options
         )
-        if fileName:
-            print(fileName)
-
+        if file_name:
+            root = self._active_model['treeView']._root
+            root.clear()
+            ds = dcmread(file_name)
+            parseDicomDataset(ds, root)
+            self._active_model['treeView'].layoutChanged.emit()
 
     def centerWinPos(self):
         frame_geom = self.frameGeometry()
