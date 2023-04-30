@@ -27,8 +27,6 @@ from pydicom import (
     dcmread,
 )
 
-
-
 class App_QMainWindow(QMainWindow):
     def __init__(self, design_file='./src/gui/ui/mainwindow.ui'):
         super().__init__()

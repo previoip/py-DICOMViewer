@@ -16,7 +16,6 @@ class QtApp:
         self._dicom_data_model      = QtDataModelDicomPatientRecord()
 
     def onInit(self):
-        self._qt_win.setMinimumSize(app_window_min_width, app_window_min_height)
         self._qt_win.setWindowTitle(app_name.decode(system_encoding))
         self._qt_win.centerWinPos()
         self._qt_win.setDataModelToWidget('treeView', self._dicom_data_model)
