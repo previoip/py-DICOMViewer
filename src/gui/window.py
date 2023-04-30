@@ -18,8 +18,8 @@ from bootstrap import (
     test_preset_data_path,
 )
 from src.backends.data_model import (
-    QtDM_Dicom,
-    I_DicomNode,
+    QtDataModelDicomPatientRecord,
+    IDicomPatientRecordNode,
     parseDicomFromPath
 )
 
@@ -75,7 +75,7 @@ class App_QMainWindow(QMainWindow):
             options=options
         )
         if file_path:
-            root = self._active_model['treeView'].getRootNode()
+            root = self._active_model['treeView'].getParentNode()
             # root.clear()
             parseDicomFromPath(file_path, root)
             print('needs update')
@@ -93,7 +93,7 @@ class App_QMainWindow(QMainWindow):
             options=options
         )
         if file_path:
-            root = self._active_model['treeView'].getRootNode()
+            root = self._active_model['treeView'].getParentNode()
             # root.clear()
             parseDicomFromPath(file_path, root)
             print('needs update', file_path)

@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (
 )
 from bootstrap import *
 from src.gui.window import App_QMainWindow
-from src.backends.data_model import QtDM_Dicom, I_DicomNode
+from src.backends.data_model import QtDataModelDicomPatientRecord
 
 main_window_design_file='./src/gui/ui/mainwindow.ui'
 
@@ -13,7 +13,7 @@ class QtApp:
     def __init__(self, *args, **kwargs):
         self._qt_app                = QApplication(list(args))
         self._qt_win                = App_QMainWindow(main_window_design_file)
-        self._dicom_data_model      = QtDM_Dicom()
+        self._dicom_data_model      = QtDataModelDicomPatientRecord()
 
     def onInit(self):
         self._qt_win.setMinimumSize(app_window_min_width, app_window_min_height)
@@ -21,7 +21,7 @@ class QtApp:
         self._qt_win.centerWinPos()
         self._qt_win.setDataModelToWidget('treeView', self._dicom_data_model)
 
-        self._dicom_data_root       = self._dicom_data_model._root
+        self._dicom_data_root       = self._dicom_data_model._node
 
     def onExec(self):
         self.onInit()
