@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (
 )
 from bootstrap import *
 from src.gui.window import App_QMainWindow
-from src.backends.data_model import QtDataModelDicomPatientRecord
+from src.backends.data_model import QtDataModelDicomPatientRecord, parseDicomFromPath
 
 main_window_design_file='./src/gui/ui/mainwindow.ui'
 
@@ -22,6 +22,7 @@ class QtApp:
         self._qt_win.setDataModelToWidget('treeView', self._dicom_data_model)
 
         self._dicom_data_root       = self._dicom_data_model._node
+        parseDicomFromPath(os.path.join(test_preset_data_path, 'dicomdirtests', 'DICOMDIR'), self._dicom_data_root)
 
     def onExec(self):
         self.onInit()

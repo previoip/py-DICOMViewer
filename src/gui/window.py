@@ -55,6 +55,25 @@ class App_QMainWindow(QMainWindow):
     def _handler_atExit(self):
         return qApp.quit
 
+    def _handler_dicomFileOpen(self, file_path):
+        root = IDicomPatientRecordNode('root')
+        self._active_model['treeView'].replaceNode(root)
+        parseDicomFromPath(file_path, root)
+        self._active_model['treeView'].layoutChanged.emit()
+
+    def _constructor_invoke_QFileDialog(self, path, _filter = "All Files (*)"):
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        def f(*args, **kwargs):
+            return QFileDialog.getOpenFileName(
+            self,
+            "Open File", 
+            path,
+            _filter, 
+            options=options
+        )
+        return f
+
     def _invoke_QMB_about(self):
         QMessageBox.about(self, 'About', '')
 
@@ -65,39 +84,20 @@ class App_QMainWindow(QMainWindow):
         QMessageBox.aboutQt(self)
 
     def _invoke_QFD_FileDialogRoot(self):
-        options = QFileDialog.Options()
-        # options |= QFileDialog.DontUseNativeDialog
-        file_path, _ = QFileDialog.getOpenFileName(
-            self,
-            "Open File", 
+        file_path, _ = self._constructor_invoke_fileDialog(
             "",
-            "All Files (*);;DICOM Files (*.dcm)", 
-            options=options
-        )
+            "All Files (*);;DICOM Files (*.dcm)" 
+            )()
         if file_path:
-            root = self._active_model['treeView'].getParentNode()
-            # root.clear()
-            parseDicomFromPath(file_path, root)
-            print('needs update')
-            self._active_model['treeView'].layoutChanged.emit()
-
+            self._handler_dicomFileOpen(file_path)
 
     def _invoke_QFD_FileDialogTestPreset(self):
-        options = QFileDialog.Options()
-        # options |= QFileDialog.DontUseNativeDialog
-        file_path, _ = QFileDialog.getOpenFileName(
-            self,
-            "Open File", 
+        file_path, _ = self._constructor_invoke_fileDialog(
             test_preset_data_path,
-            "All Files (*);;DICOM Files (*.dcm)", 
-            options=options
-        )
+            "All Files (*);;DICOM Files (*.dcm)" 
+            )()
         if file_path:
-            root = self._active_model['treeView'].getParentNode()
-            # root.clear()
-            parseDicomFromPath(file_path, root)
-            print('needs update', file_path)
-            self._active_model['treeView'].layoutChanged.emit()
+            self._handler_dicomFileOpen(file_path)
 
     def centerWinPos(self):
         frame_geom = self.frameGeometry()

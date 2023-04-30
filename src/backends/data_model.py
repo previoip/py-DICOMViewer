@@ -15,19 +15,20 @@ from PyQt5 import QtWidgets
 from PyQt5.QtCore import (
     QAbstractItemModel,
     QModelIndex,
-    Qt
+    Qt,
 )
 
 
 class IDicomPatientRecordNode:
     def __init__(self, name, obj_ref=None, parent=None):
         self.name = name
-        self.obj_ref = obj_ref
+        self._obj_ref = obj_ref
+        self._obj_ref_access = False
         self._parent = parent
         self._children = []
         self.__clear_lock = False
 
-        if isinstance(parent, self.__class__) and parent is not None:
+        if parent is not None:
             parent.addChild(self)
 
     def getParent(self):
@@ -62,8 +63,6 @@ class IDicomPatientRecordNode:
                 if not child.__clear_lock:
                     child.clear()
         self._children.clear()
-        self.__clear_lock = False
-
 
 
 class QtDataModelDicomPatientRecord(QAbstractItemModel):
@@ -73,6 +72,10 @@ class QtDataModelDicomPatientRecord(QAbstractItemModel):
 
     def getParentNode(self):
         return self._node
+
+    def replaceNode(self, root_node):
+        self._node.clear()
+        self._node = root_node
 
     def parent(self, index):
         dicom_node = index.internalPointer()
@@ -90,12 +93,12 @@ class QtDataModelDicomPatientRecord(QAbstractItemModel):
         return parent_node.getChildCount()
 
     def index(self, row, column, parent):
-        if not parent.isValid():
-            parent_node = self._node
-        else:
+        if parent.isValid():
             parent_node = parent.internalPointer()
+        else:
+            parent_node = self._node
         child = parent_node.getChild(row)
-        
+
         if child and child is not None:
             return self.createIndex(row, column, child)
         return QModelIndex()
@@ -103,66 +106,43 @@ class QtDataModelDicomPatientRecord(QAbstractItemModel):
     def columnCount(self, index):
         return 1
 
+    def flags(self, index):
+        flags = QAbstractItemModel.flags(self, index)
+        return flags
+
     def data(self, index, role):
         if not index.isValid():
             return None
         dicom_node = index.internalPointer()
         if role == Qt.DisplayRole:
-            return dicom_node.name
+            return str(dicom_node.name)
 
+def _recurseFileRecordNode(ds, root):
+    if not isinstance(ds, Dataset):
+        return
+    if not hasattr(ds, 'DirectoryRecordType'):
+        return
+
+    dirtype = ds.DirectoryRecordType
+    trunk = IDicomPatientRecordNode(dirtype, ds, root)
+
+    if dirtype in ['IMAGE']:
+        trunk.name = '<IMAGE>'
+
+    if hasattr(ds, 'children'):
+        for child in ds.children:
+            _recurseFileRecordNode(child, trunk)
+
+
+def predicateAttrEqVal(attr, value):
+    return lambda x: getattr(x, attr) == value
 
 def parseDicomFromPath(path, dicom_node=IDicomPatientRecordNode('root')):
-    # assumes Dataset or Dircom/FileDataset is flat
     dicom_node.clear()
     ds = dcmread(path)
-
     ds.ensure_file_meta()
     main_trunk = IDicomPatientRecordNode(os.path.basename(path), ds, dicom_node)
-
-    def filterPredicateDirType(dir_type_selector, value):
-        return lambda x: getattr(x, dir_type_selector) == value
-
     if hasattr(ds, 'patient_records'):
         for record in ds.patient_records:
-            patient_id = record.PatientID
-            patient_name = record.PatientName
-
-            record_trunk = IDicomPatientRecordNode(patient_name, None, main_trunk)
-
-            for study in record.children:
-                if study.DirectoryRecordType != 'STUDY':
-                    continue
-
-                study_id = study.StudyID
-                study_date = study.StudyDate
-                study_desc = getattr(study, 'StudyDescription', 'undefined')
-
-                study_trunk = IDicomPatientRecordNode(study_id, None, record_trunk)
-
-                for series in study.children:
-                    if series.DirectoryRecordType != 'SERIES':
-                        continue
-
-                    series_desc = getattr(series, 'SeriesDescription', 'undefined')
-                    series_number = getattr(series, 'SeriesNumber', 'undefined')
-
-                    series_trunk = IDicomPatientRecordNode(series_number, None, study_trunk)
-
-                    for image in series.children:
-                        if image.DirectoryRecordType != 'IMAGE':
-                            continue
-
-        # name = fetchFilesetIdRepr(ds)
-        # for elem in ds:
-        #     if elem.VR == 'SQ':
-        #         [recurse(item, trunk) for item in elem.value]
-
+            _recurseFileRecordNode(record, main_trunk)
     return dicom_node
-
-def fetchFilesetIdRepr(ds):
-    assert isinstance(ds, FileDataset)
-    if 'PatientName' in ds:
-        return ds.get('PatientName')
-    elif 'PatientID' in ds:
-        return ds.get('PatientName')
-    return 'undefined'
