@@ -1,4 +1,4 @@
-from app import QtApp
+from src.app import QtApp
 import sys
 
 if __name__ == '__main__':

@@ -18,10 +18,12 @@ from PyQt5.QtCore import (
     Qt,
 )
 
+import inspect
 
 class IDicomPatientRecordNode:
-    def __init__(self, name, obj_ref=None, parent=None):
-        self.name = name
+    def __init__(self, display_name, obj_ref=None, parent=None):
+        self.display_name = display_name
+        self.display_attr = {}
         self._obj_ref = obj_ref
         self._obj_ref_access = False
         self._parent = parent
@@ -36,7 +38,7 @@ class IDicomPatientRecordNode:
 
     def getRootNode(self):
         curr = self._parent
-        previous = None
+        previous = self
         while curr is not None:
             previous = curr
             curr = curr.getParent()
@@ -45,7 +47,7 @@ class IDicomPatientRecordNode:
     def index(self):
         if isinstance(self._parent, self.__class__) and self._parent is not None:
             return self._parent._children.index(self)
-        return -1
+        return 0
 
     def addChild(self, child):
         self._children.append(child)
@@ -64,12 +66,12 @@ class IDicomPatientRecordNode:
                     child.clear()
         self._children.clear()
 
-
 class QtDataModelDicomPatientRecord(QAbstractItemModel):
     def __init__(self, dicom_node=IDicomPatientRecordNode('root')):
         super().__init__()
         self._node = dicom_node
 
+    # base class method overrides
     def getParentNode(self):
         return self._node
 
@@ -79,8 +81,9 @@ class QtDataModelDicomPatientRecord(QAbstractItemModel):
 
     def parent(self, index):
         dicom_node = index.internalPointer()
+        if not isinstance(dicom_node, IDicomPatientRecordNode):
+            return QModelIndex()
         parent_node = dicom_node.getParent()
-
         if parent_node == self._node:
             return QModelIndex()
         return self.createIndex(parent_node.index(), 0, parent_node)
@@ -115,7 +118,7 @@ class QtDataModelDicomPatientRecord(QAbstractItemModel):
             return None
         dicom_node = index.internalPointer()
         if role == Qt.DisplayRole:
-            return str(dicom_node.name)
+            return str(dicom_node.display_name)
 
 def _recurseFileRecordNode(ds, root):
     if not isinstance(ds, Dataset):
@@ -127,7 +130,7 @@ def _recurseFileRecordNode(ds, root):
     trunk = IDicomPatientRecordNode(dirtype, ds, root)
 
     if dirtype in ['IMAGE']:
-        trunk.name = '<IMAGE>'
+        trunk.display_name = '<IMAGE>'
 
     if hasattr(ds, 'children'):
         for child in ds.children:

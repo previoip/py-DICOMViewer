@@ -20,7 +20,8 @@ class QtApp:
         self._qt_win.centerWinPos()
         self._qt_win.setDataModelToWidget('treeView', self._dicom_data_model)
 
-        self._dicom_data_root       = self._dicom_data_model._node
+        self._dicom_data_root       = self._dicom_data_model.getParentNode().getRootNode()
+        self._qt_win._active_path   = os.path.join(test_preset_data_path, 'dicomdirtests')
         parseDicomFromPath(os.path.join(test_preset_data_path, 'dicomdirtests', 'DICOMDIR'), self._dicom_data_root)
 
     def onExec(self):
