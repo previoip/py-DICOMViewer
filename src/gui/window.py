@@ -44,10 +44,11 @@ from pathlib import Path
 
 class MplCanvas(FigureCanvas):
     def __init__(self, parent):
-
-        self.fig, self.ax = plt.subplots(figsize=(4, 4), dpi=100)
+        self.fig, self.ax = plt.subplots(dpi=72, layout="constrained")
         super().__init__(self.fig)
         self.setParent(parent)
+        self.ax.margins(0)
+
 
 class App_QMainWindow(QMainWindow):
 
@@ -59,6 +60,9 @@ class App_QMainWindow(QMainWindow):
         self._initUI()
         self._active_model = {}
         self._active_path = ''
+    
+    def postInit(self):
+        self.resize_signal.emit()
 
     def setDataModelToWidget(self, widget_selector, model):
         widget = getattr(self, widget_selector)
@@ -86,6 +90,7 @@ class App_QMainWindow(QMainWindow):
 
     def _initTreeViewWidget(self):
         self.treeView.clicked.connect(self._handler_treeView_updateOnItemSelect)
+        self.treeView.clicked.connect(self._handler_loadImageToCanvas)
 
     def _initTableWidget(self):
         header = self.tableWidget.horizontalHeader()
@@ -95,13 +100,9 @@ class App_QMainWindow(QMainWindow):
     def _initMplCanvas(self):
         self.MplWidget = self.frame
         self.MplChart = MplCanvas(self.MplWidget)
+        self.resize_signal.connect(self._handler_MplCanvas_onResize)
 
-        parent_frame_geom = self.MplWidget.frameGeometry()
-        self.MplChart.setGeometry(parent_frame_geom)
-
-        self.resize_signal.connect(self._handler_onResize_MplCanvas)
-
-    def _handler_onResize_MplCanvas(self):
+    def _handler_MplCanvas_onResize(self):
         parent_frame_geom = self.MplWidget.frameGeometry()
         self.MplChart.setGeometry(parent_frame_geom)
 
@@ -113,9 +114,6 @@ class App_QMainWindow(QMainWindow):
         for i in range(row):
             table_widget.removeRow(i)
 
-        # if not dicom_node._obj_ref_access:
-        #     return
-
         ds = dicom_node._obj_ref
         els = [i for i in ds]
         table_widget.setRowCount(len(els))
@@ -124,8 +122,17 @@ class App_QMainWindow(QMainWindow):
             table_widget.setItem(r, 0, QTableWidgetItem(el.name))
             table_widget.setItem(r, 1, QTableWidgetItem(el.repval))
 
+    def _handler_loadImageToCanvas(self, index):
+        canvas_widget = self.MplChart
+
+        dicom_node = index.internalPointer()
+
+        if not dicom_node._obj_ref_access:
+                return
+
         root_dicom_node = dicom_node.getRootNode().getChild(0)
         root_dicom_path = Path(root_dicom_node._obj_ref.filename)
+        ds = dicom_node._obj_ref
         
         ds_img = None
         if 'ReferencedFileID' in ds:
@@ -135,7 +142,7 @@ class App_QMainWindow(QMainWindow):
             elif el.VM > 1:
                 relpath_to_img = os.path.join(*el.value)
             
-            relpath_to_img = Path(self._active_path) / Path(relpath_to_img)
+            relpath_to_img = Path(self._active_path).parent / Path(relpath_to_img)
             ds_img = dcmread(relpath_to_img.resolve())
 
         elif hasattr(ds, 'pixel_array'):
@@ -145,7 +152,8 @@ class App_QMainWindow(QMainWindow):
         if ds_img is None:
             return
 
-
+        canvas_widget.ax.imshow(ds_img.pixel_array, cmap=plt.cm.gray)
+        canvas_widget.draw()
         
 
 

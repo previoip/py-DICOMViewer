@@ -64,6 +64,7 @@ class IDicomPatientRecordNode:
             if isinstance(child, self.__class__):
                 if not child.__clear_lock:
                     child.clear()
+            del child
         self._children.clear()
 
 class QtDataModelDicomPatientRecord(QAbstractItemModel):
@@ -130,7 +131,8 @@ def _recurseFileRecordNode(ds, root):
     trunk = IDicomPatientRecordNode(dirtype, ds, root)
 
     if dirtype in ['IMAGE']:
-        trunk.display_name = '<IMAGE>'
+        trunk.display_name = f'<{trunk.display_name}>'
+        trunk._obj_ref_access = True
 
     if hasattr(ds, 'children'):
         for child in ds.children:
@@ -142,10 +144,14 @@ def predicateAttrEqVal(attr, value):
 
 def parseDicomFromPath(path, dicom_node=IDicomPatientRecordNode('root')):
     dicom_node.clear()
+    # dicom_node = IDicomPatientRecordNode('root')
     ds = dcmread(path)
     ds.ensure_file_meta()
     main_trunk = IDicomPatientRecordNode(os.path.basename(path), ds, dicom_node)
     if hasattr(ds, 'patient_records'):
         for record in ds.patient_records:
             _recurseFileRecordNode(record, main_trunk)
+    if hasattr(ds, 'pixel_array'):
+        main_trunk._obj_ref_access = True
+
     return dicom_node
