@@ -52,6 +52,9 @@ class MplCanvas(FigureCanvas):
         self.setParent(parent)
         self.ax.margins(0)
 
+    def resizeFitToParentWidget(self):
+        parent_frame_geom = self.parent().frameGeometry()
+        self.setGeometry(parent_frame_geom)
 
 class App_QMainWindow(QMainWindow):
 
@@ -107,13 +110,12 @@ class App_QMainWindow(QMainWindow):
         self.MplToolbarFrame = self.toolbarFrame
         self.MplCanvas = MplCanvas(self.MplWidget)
         self.MplToolbar = NavigationToolbar(self.MplCanvas, self.MplToolbarFrame)
-        self.resize_signal.connect(self._eventHandler_MplCanvas_onResize)
-        self.render_signal.connect(self._enevtHandler_renderImage_onAny)
+        self.resize_signal.connect(self._eventHandler_onResize)
+        self.render_signal.connect(self.eventHandler_render)
         self.MplToolbar.setOrientation(Qt.Vertical)
 
-    def _eventHandler_MplCanvas_onResize(self):
-        parent_frame_geom = self.MplWidget.frameGeometry()
-        self.MplCanvas.setGeometry(parent_frame_geom)
+    def _eventHandler_onResize(self):
+        self.MplCanvas.resizeFitToParentWidget()
 
     def _handler_treeView_updateOnItemSelect(self, index):
         table_widget = self.tableWidget
@@ -164,7 +166,7 @@ class App_QMainWindow(QMainWindow):
         self.__image_data_buf = ds_img.pixel_array
         self.render_signal.emit()
 
-    def _enevtHandler_renderImage_onAny(self):
+    def eventHandler_render(self):
         if len(self.__image_data_buf) > 1:
             canvas_widget = self.MplCanvas
             canvas_widget.ax.cla()
