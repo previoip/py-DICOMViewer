@@ -128,7 +128,7 @@ class App_QMainWindow(QMainWindow):
         dicom_node = index.internalPointer()
 
         if not dicom_node._obj_ref_access:
-                return
+            return
 
         root_dicom_node = dicom_node.getRootNode().getChild(0)
         root_dicom_path = Path(root_dicom_node._obj_ref.filename)
@@ -154,17 +154,24 @@ class App_QMainWindow(QMainWindow):
 
         canvas_widget.ax.imshow(ds_img.pixel_array, cmap=plt.cm.gray)
         canvas_widget.draw()
-        
+        canvas_widget.ax.cla()
 
 
     def _handler_atExit(self):
         return qApp.quit
 
     def _handler_dicomFileOpen(self, file_path):
+        self.treeView.setUpdatesEnabled(False)
+
+        model = self._active_model['treeView']
+        root = model.getParentNode().getRootNode()
+        self.setDataModelToWidget('treeView', None)
+
         self._active_path = file_path
-        root = IDicomPatientRecordNode('root')
-        self._active_model['treeView'].replaceNode(root)
         parseDicomFromPath(file_path, root)
+
+        self.setDataModelToWidget('treeView', model)
+        self.treeView.setUpdatesEnabled(True)
         self._active_model['treeView'].layoutChanged.emit()
 
     def _wrapper_invoke_QFileDialog(self, path, _filter = "All Files (*)"):
@@ -204,9 +211,3 @@ class App_QMainWindow(QMainWindow):
             )()
         if file_path:
             self._handler_dicomFileOpen(file_path)
-
-    def centerWinPos(self):
-        frame_geom = self.frameGeometry()
-        center_pos = QDesktopWidget().availableGeometry().center()
-        frame_geom.moveCenter(center_pos)
-        self.move(frame_geom.topLeft())

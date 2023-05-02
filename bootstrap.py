@@ -7,7 +7,8 @@
 import sys, os
 
 # program defaults
-app_name                    = b'foobar'
+app_name                    = b'Simple DICOM Viewer'
+app_version                 = b'0.0.0.1'
 app_path_storage_temp       = './tempstorage'
 app_fpath_license           = './LICENSE'
 
