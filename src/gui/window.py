@@ -53,6 +53,7 @@ class MplCanvas(FigureCanvas):
 class App_QMainWindow(QMainWindow):
 
     resize_signal = pyqtSignal()
+    render_signal = pyqtSignal()
 
     def __init__(self, design_file='./src/gui/ui/mainwindow.ui'):
         super().__init__()
@@ -60,6 +61,7 @@ class App_QMainWindow(QMainWindow):
         self._initUI()
         self._active_model = {}
         self._active_path = ''
+        self.__image_data_buf = []
     
     def postInit(self):
         self.resize_signal.emit()
@@ -100,9 +102,10 @@ class App_QMainWindow(QMainWindow):
     def _initMplCanvas(self):
         self.MplWidget = self.frame
         self.MplChart = MplCanvas(self.MplWidget)
-        self.resize_signal.connect(self._handler_MplCanvas_onResize)
+        self.resize_signal.connect(self._eventHandler_MplCanvas_onResize)
+        self.render_signal.connect(self._enevtHandler_renderImage)
 
-    def _handler_MplCanvas_onResize(self):
+    def _eventHandler_MplCanvas_onResize(self):
         parent_frame_geom = self.MplWidget.frameGeometry()
         self.MplChart.setGeometry(parent_frame_geom)
 
@@ -152,10 +155,15 @@ class App_QMainWindow(QMainWindow):
         if ds_img is None:
             return
 
-        canvas_widget.ax.imshow(ds_img.pixel_array, cmap=plt.cm.gray)
-        canvas_widget.draw()
-        canvas_widget.ax.cla()
+        self.__image_data_buf = ds_img.pixel_array
+        self.render_signal.emit()
 
+    def _enevtHandler_renderImage(self):
+        if len(self.__image_data_buf) > 1:
+            canvas_widget = self.MplChart
+            canvas_widget.ax.cla()
+            canvas_widget.ax.imshow(self.__image_data_buf, cmap=plt.cm.gray)
+            canvas_widget.draw()
 
     def _handler_atExit(self):
         return qApp.quit
