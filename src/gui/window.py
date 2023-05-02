@@ -17,10 +17,13 @@ from PyQt5.QtWidgets import (
 )
 
 from PyQt5.QtCore import (
+    Qt,
+    QSize,
     pyqtSignal,
 )
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -101,13 +104,16 @@ class App_QMainWindow(QMainWindow):
 
     def _initMplCanvas(self):
         self.MplWidget = self.frame
-        self.MplChart = MplCanvas(self.MplWidget)
+        self.MplToolbarFrame = self.toolbarFrame
+        self.MplCanvas = MplCanvas(self.MplWidget)
+        self.MplToolbar = NavigationToolbar(self.MplCanvas, self.MplToolbarFrame)
         self.resize_signal.connect(self._eventHandler_MplCanvas_onResize)
-        self.render_signal.connect(self._enevtHandler_renderImage)
+        self.render_signal.connect(self._enevtHandler_renderImage_onAny)
+        self.MplToolbar.setOrientation(Qt.Vertical)
 
     def _eventHandler_MplCanvas_onResize(self):
         parent_frame_geom = self.MplWidget.frameGeometry()
-        self.MplChart.setGeometry(parent_frame_geom)
+        self.MplCanvas.setGeometry(parent_frame_geom)
 
     def _handler_treeView_updateOnItemSelect(self, index):
         table_widget = self.tableWidget
@@ -126,7 +132,7 @@ class App_QMainWindow(QMainWindow):
             table_widget.setItem(r, 1, QTableWidgetItem(el.repval))
 
     def _handler_loadImageToCanvas(self, index):
-        canvas_widget = self.MplChart
+        canvas_widget = self.MplCanvas
 
         dicom_node = index.internalPointer()
 
@@ -158,9 +164,9 @@ class App_QMainWindow(QMainWindow):
         self.__image_data_buf = ds_img.pixel_array
         self.render_signal.emit()
 
-    def _enevtHandler_renderImage(self):
+    def _enevtHandler_renderImage_onAny(self):
         if len(self.__image_data_buf) > 1:
-            canvas_widget = self.MplChart
+            canvas_widget = self.MplCanvas
             canvas_widget.ax.cla()
             canvas_widget.ax.imshow(self.__image_data_buf, cmap=plt.cm.gray)
             canvas_widget.draw()
