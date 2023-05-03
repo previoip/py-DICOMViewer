@@ -72,13 +72,15 @@ class QtDataModelDicomPatientRecord(QAbstractItemModel):
         super().__init__()
         self._node = dicom_node
 
-    # base class method overrides
-    def getParentNode(self):
+    def getNode(self):
         return self._node
 
     def replaceNode(self, root_node):
         self._node.clear()
         self._node = root_node
+
+
+    # QAbstractItemModel class method overrides
 
     def parent(self, index):
         dicom_node = index.internalPointer()
@@ -118,39 +120,37 @@ class QtDataModelDicomPatientRecord(QAbstractItemModel):
         if not index.isValid():
             return None
         dicom_node = index.internalPointer()
+        row = index.row()
         if role == Qt.DisplayRole:
-            return str(dicom_node.display_name)
+            return f'{row + 1}. {dicom_node.display_name}'
 
-def _recurseFileRecordNode(ds, root):
-    if not isinstance(ds, Dataset):
-        return
-    if not hasattr(ds, 'DirectoryRecordType'):
-        return
-
-    dirtype = ds.DirectoryRecordType
-    trunk = IDicomPatientRecordNode(dirtype, ds, root)
-
-    if dirtype in ['IMAGE']:
-        trunk.display_name = f'<{trunk.display_name}>'
-        trunk._obj_ref_access = True
-
-    if hasattr(ds, 'children'):
-        for child in ds.children:
-            _recurseFileRecordNode(child, trunk)
-
-
-def predicateAttrEqVal(attr, value):
-    return lambda x: getattr(x, attr) == value
 
 def parseDicomFromPath(path, dicom_node=IDicomPatientRecordNode('root')):
+
+    def recurse(ds, root):
+        if not isinstance(ds, Dataset):
+            return
+        if not hasattr(ds, 'DirectoryRecordType'):
+            return
+
+        dirtype = ds.DirectoryRecordType
+        trunk = IDicomPatientRecordNode(dirtype, ds, root)
+
+        if dirtype in ['IMAGE']:
+            trunk.display_name = f'<{trunk.display_name}>'
+            trunk._obj_ref_access = True
+
+        if hasattr(ds, 'children'):
+            for child in ds.children:
+                recurse(child, trunk)
+
     dicom_node.clear()
-    # dicom_node = IDicomPatientRecordNode('root')
     ds = dcmread(path)
     ds.ensure_file_meta()
     main_trunk = IDicomPatientRecordNode(os.path.basename(path), ds, dicom_node)
     if hasattr(ds, 'patient_records'):
         for record in ds.patient_records:
-            _recurseFileRecordNode(record, main_trunk)
+            recurse(record, main_trunk)
     if hasattr(ds, 'pixel_array'):
         main_trunk._obj_ref_access = True
 

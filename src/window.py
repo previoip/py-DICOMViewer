@@ -2,6 +2,7 @@ from PyQt5 import (
     QtWidgets,
     uic
 )
+
 from PyQt5.QtWidgets import (
     qApp,
     QMainWindow,
@@ -22,10 +23,12 @@ from PyQt5.QtCore import (
     pyqtSignal,
 )
 
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_qt5agg import (
+    FigureCanvasQTAgg as FigureCanvas,
+    NavigationToolbar2QT as NavigationToolbar,
+)
 
 from bootstrap import (
     app_prefetch_license, 
@@ -45,29 +48,51 @@ from pydicom import (
 import os
 from pathlib import Path
 
+
+
+
 class MplCanvas(FigureCanvas):
     def __init__(self, parent):
-        self.fig, self.ax = plt.subplots(dpi=72, layout="constrained")
+        self.fig, self.ax = plt.subplots(
+            dpi=72,
+            layout="constrained"
+        )
         super().__init__(self.fig)
+        self.__pixel_arr = []
+        self.__axImg = None
         self.setParent(parent)
         self.ax.margins(0)
+        self.ax.set_aspect('auto', 'datalim')
+        self.cmap = plt.cm.gray
 
     def resizeFitToParentWidget(self):
         parent_frame_geom = self.parent().frameGeometry()
         self.setGeometry(parent_frame_geom)
+
+    def updateImage(self):
+        if self.__axImg is not None:
+            self.cmap = self.__axImg.get_cmap()
+        if len(self.__pixel_arr) == 0 and self.__pixel_arr is None:
+            return
+        self.ax.cla()
+        self.__axImg = self.ax.imshow(self.__pixel_arr, cmap=self.cmap)
+        self.draw()
+
+    def setArr(self, pixel_arr):
+        self.__pixel_arr = pixel_arr
+
 
 class App_QMainWindow(QMainWindow):
 
     resize_signal = pyqtSignal()
     render_signal = pyqtSignal()
 
-    def __init__(self, design_file='./src/gui/ui/mainwindow.ui'):
+    def __init__(self, design_file='./mainwindow.ui'):
         super().__init__()
         uic.loadUi(design_file, self)
         self._initUI()
         self._active_model = {}
         self._active_path = ''
-        self.__image_data_buf = []
     
     def postInit(self):
         self.resize_signal.emit()
@@ -89,16 +114,16 @@ class App_QMainWindow(QMainWindow):
         self._initMplCanvas()
 
     def _initMenuBars(self):
-        self.actionExit.triggered.connect(self._handler_atExit())
-        self.actionAbout.triggered.connect(self._invoke_QMB_about)
-        self.actionLicense.triggered.connect(self._invoke_QMB_license)
-        self.actionAbout_Qt.triggered.connect(self._invoke_QMB_aboutQt)
-        self.actionOpen.triggered.connect(self._invoke_QFD_FileDialogRoot)
-        self.actionOpen_Test.triggered.connect(self._invoke_QFD_FileDialogTestPreset)
+        self.actionExit.triggered.connect(self._wrapperAtExit())
+        self.actionAbout.triggered.connect(self._invokeMessageBoxAbout)
+        self.actionLicense.triggered.connect(self._invokeMessageBoxLicense)
+        self.actionAbout_Qt.triggered.connect(self._invokeMessageBoxAboutQt)
+        self.actionOpen.triggered.connect(self._invokeMessageBoxAtRoot)
+        self.actionOpen_Test.triggered.connect(self._invokeFileDialogAtTest)
 
     def _initTreeViewWidget(self):
-        self.treeView.clicked.connect(self._handler_treeView_updateOnItemSelect)
-        self.treeView.clicked.connect(self._handler_loadImageToCanvas)
+        self.treeView.clicked.connect(self._handleOnItemSelect)
+        self.treeView.clicked.connect(self._handleLoadDicomData)
 
     def _initTableWidget(self):
         header = self.tableWidget.horizontalHeader()
@@ -110,14 +135,15 @@ class App_QMainWindow(QMainWindow):
         self.MplToolbarFrame = self.toolbarFrame
         self.MplCanvas = MplCanvas(self.MplWidget)
         self.MplToolbar = NavigationToolbar(self.MplCanvas, self.MplToolbarFrame)
-        self.resize_signal.connect(self._eventHandler_onResize)
-        self.render_signal.connect(self.eventHandler_render)
+        print(type(self.MplToolbar))
+        self.resize_signal.connect(self._invokeOnResizeEvent)
+        self.render_signal.connect(self.invokeImageUpdate)
         self.MplToolbar.setOrientation(Qt.Vertical)
 
-    def _eventHandler_onResize(self):
+    def _invokeOnResizeEvent(self):
         self.MplCanvas.resizeFitToParentWidget()
 
-    def _handler_treeView_updateOnItemSelect(self, index):
+    def _handleOnItemSelect(self, index):
         table_widget = self.tableWidget
         dicom_node = index.internalPointer()
 
@@ -133,7 +159,7 @@ class App_QMainWindow(QMainWindow):
             table_widget.setItem(r, 0, QTableWidgetItem(el.name))
             table_widget.setItem(r, 1, QTableWidgetItem(el.repval))
 
-    def _handler_loadImageToCanvas(self, index):
+    def _handleLoadDicomData(self, index):
         canvas_widget = self.MplCanvas
 
         dicom_node = index.internalPointer()
@@ -163,34 +189,16 @@ class App_QMainWindow(QMainWindow):
         if ds_img is None:
             return
 
-        self.__image_data_buf = ds_img.pixel_array
+        canvas_widget.setArr(ds_img.pixel_array)
         self.render_signal.emit()
 
-    def eventHandler_render(self):
-        if len(self.__image_data_buf) > 1:
-            canvas_widget = self.MplCanvas
-            canvas_widget.ax.cla()
-            canvas_widget.ax.imshow(self.__image_data_buf, cmap=plt.cm.gray)
-            canvas_widget.draw()
+    def invokeImageUpdate(self):
+        self.MplCanvas.updateImage()
 
-    def _handler_atExit(self):
+    def _wrapperAtExit(self):
         return qApp.quit
 
-    def _handler_dicomFileOpen(self, file_path):
-        self.treeView.setUpdatesEnabled(False)
-
-        model = self._active_model['treeView']
-        root = model.getParentNode().getRootNode()
-        self.setDataModelToWidget('treeView', None)
-
-        self._active_path = file_path
-        parseDicomFromPath(file_path, root)
-
-        self.setDataModelToWidget('treeView', model)
-        self.treeView.setUpdatesEnabled(True)
-        self._active_model['treeView'].layoutChanged.emit()
-
-    def _wrapper_invoke_QFileDialog(self, path, _filter = "All Files (*)"):
+    def _wrapperFileDialog(self, path, _filter = "All Files (*)"):
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
         def wrapper(*args, **kwargs):
@@ -203,27 +211,41 @@ class App_QMainWindow(QMainWindow):
         )
         return wrapper
 
-    def _invoke_QMB_about(self):
+    def _handleAtFileOpen(self, file_path):
+        self.treeView.setUpdatesEnabled(False)
+
+        model = self._active_model['treeView']
+        root = model.getNode().getRootNode()
+        self.setDataModelToWidget('treeView', None)
+
+        self._active_path = file_path
+        parseDicomFromPath(file_path, root)
+
+        self.setDataModelToWidget('treeView', model)
+        self.treeView.setUpdatesEnabled(True)
+        self._active_model['treeView'].layoutChanged.emit()
+
+    def _invokeMessageBoxAbout(self):
         QMessageBox.about(self, 'About', '')
 
-    def _invoke_QMB_license(self):
+    def _invokeMessageBoxLicense(self):
         QMessageBox.about(self, 'License', app_prefetch_license)
 
-    def _invoke_QMB_aboutQt(self):
+    def _invokeMessageBoxAboutQt(self):
         QMessageBox.aboutQt(self)
 
-    def _invoke_QFD_FileDialogRoot(self):
-        file_path, _ = self._wrapper_invoke_QFileDialog(
+    def _invokeMessageBoxAtRoot(self):
+        file_path, _ = self._wrapperFileDialog(
             "",
             "All Files (*);;DICOM Files (*.dcm)" 
             )()
         if file_path:
-            self._handler_dicomFileOpen(file_path)
+            self._handleAtFileOpen(file_path)
 
-    def _invoke_QFD_FileDialogTestPreset(self):
-        file_path, _ = self._wrapper_invoke_QFileDialog(
+    def _invokeFileDialogAtTest(self):
+        file_path, _ = self._wrapperFileDialog(
             test_preset_data_path,
             "All Files (*);;DICOM Files (*.dcm)" 
             )()
         if file_path:
-            self._handler_dicomFileOpen(file_path)
+            self._handleAtFileOpen(file_path)
