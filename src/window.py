@@ -32,7 +32,7 @@ from bootstrap import (
     test_preset_data_path,
 )
 
-from src.backends.data_model import (
+from src.data_model import (
     QtDataModelDicomPatientRecord,
     IDicomPatientRecordNode,
     parseDicomFromPath

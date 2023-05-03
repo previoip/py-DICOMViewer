@@ -4,10 +4,10 @@ from PyQt5.QtWidgets import (
     QApplication,
 )
 from bootstrap import *
-from src.gui.window import App_QMainWindow
-from src.backends.data_model import QtDataModelDicomPatientRecord, parseDicomFromPath
+from src.window import App_QMainWindow
+from src.data_model import QtDataModelDicomPatientRecord, parseDicomFromPath
 
-main_window_design_file='./src/gui/ui/mainwindow.ui'
+main_window_design_file='./src/ui/mainwindow.ui'
 
 class QtApp:
     def __init__(self, *args, **kwargs):
