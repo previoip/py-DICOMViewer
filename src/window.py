@@ -30,6 +30,38 @@ from matplotlib.backends.backend_qt5agg import (
     NavigationToolbar2QT as NavigationToolbar,
 )
 
+# HEY
+# you might read this and asks yourself what?
+# I've found a method to exclude toolitem for
+# matplotlib navigation toolbar derived from
+# qt5agg backend. Just in case you might be 
+# wondering why, usually canvas object have 
+#      remove_toolitem()
+# bound method to remove toolbar item which 
+# is missing in the backend implementation.
+
+# but by looking at the source code, the items
+# is a class attribute on its own and thus
+# removing it is as straightforward as follows.
+
+__ti = NavigationToolbar.toolitems # or NavigationToolbar2QT.toolitems
+__ti.pop(
+    __ti.index(
+        next(filter(
+            lambda a: 'configure_subplots' in a,
+            __ti 
+        ))
+    )
+)
+
+# what the above just do uis to remove
+# 'configure_subplots' button, which in this
+# app, this toolbar always raises UserWarning
+# compat with tight_layout, which I find jarring
+
+# you can check it at the following git 
+# https://github.com/matplotlib/matplotlib/blob/main/lib/matplotlib/backends/backend_qt.py#L624
+
 from bootstrap import (
     app_prefetch_license, 
     test_preset_data_path,
@@ -72,7 +104,7 @@ class MplCanvas(FigureCanvas):
     def updateImage(self):
         if self.__axImg is not None:
             self.cmap = self.__axImg.get_cmap()
-        if len(self.__pixel_arr) == 0 and self.__pixel_arr is None:
+        if self.__pixel_arr is None or len(self.__pixel_arr) == 0:
             return
         self.ax.cla()
         self.__axImg = self.ax.imshow(self.__pixel_arr, cmap=self.cmap)
@@ -135,7 +167,6 @@ class App_QMainWindow(QMainWindow):
         self.MplToolbarFrame = self.toolbarFrame
         self.MplCanvas = MplCanvas(self.MplWidget)
         self.MplToolbar = NavigationToolbar(self.MplCanvas, self.MplToolbarFrame)
-        print(type(self.MplToolbar))
         self.resize_signal.connect(self._invokeOnResizeEvent)
         self.render_signal.connect(self.invokeImageUpdate)
         self.MplToolbar.setOrientation(Qt.Vertical)
