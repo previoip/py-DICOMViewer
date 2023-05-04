@@ -24,6 +24,7 @@ class IDicomPatientRecordNode:
     def __init__(self, display_name, obj_ref=None, parent=None):
         self.display_name = display_name
         self.display_attr = {}
+        self.active = False
         self._obj_ref = obj_ref
         self._obj_ref_access = False
         self._parent = parent
@@ -121,8 +122,9 @@ class QtDataModelDicomPatientRecord(QAbstractItemModel):
             return None
         dicom_node = index.internalPointer()
         row = index.row()
+        status = '[x]' if dicom_node.active else '[ ]'
         if role == Qt.DisplayRole:
-            return f'{row + 1}. {dicom_node.display_name}'
+            return f'{status}{row + 1}. {dicom_node.display_name}'
 
 
 def parseDicomFromPath(path, dicom_node=IDicomPatientRecordNode('root')):

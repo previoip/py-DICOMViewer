@@ -154,8 +154,9 @@ class App_QMainWindow(QMainWindow):
         self.actionOpen_Test.triggered.connect(self._invokeFileDialogAtTest)
 
     def _initTreeViewWidget(self):
-        self.treeView.clicked.connect(self._handleOnItemSelect)
-        self.treeView.clicked.connect(self._handleLoadDicomData)
+        # self.treeView.activated.connect(self._handleOnItemSelect)
+        self.treeView.selectionChanged = \
+            lambda curr, prev: self._handleOnItemSelect(curr.indexes(), prev.indexes())
 
     def _initTableWidget(self):
         header = self.tableWidget.horizontalHeader()
@@ -174,7 +175,16 @@ class App_QMainWindow(QMainWindow):
     def _invokeOnResizeEvent(self):
         self.MplCanvas.resizeFitToParentWidget()
 
-    def _handleOnItemSelect(self, index):
+    def _handleOnItemSelect(self, current_indexes, previous_indexes):
+        for curr in current_indexes:
+            curr.internalPointer().active = True
+            self._handleLoadDicomData(curr)
+            self._handleLoadDsToTable(curr)
+        
+        for prev in previous_indexes:
+            prev.internalPointer().active = False
+
+    def _handleLoadDsToTable(self, index):
         table_widget = self.tableWidget
         dicom_node = index.internalPointer()
 
