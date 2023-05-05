@@ -192,7 +192,7 @@ class App_QMainWindow(QMainWindow):
         for i in range(row):
             table_widget.removeRow(i)
 
-        ds = dicom_node._obj_ref
+        ds = dicom_node.getObj()
         els = [i for i in ds]
         table_widget.setRowCount(len(els))
 
@@ -205,12 +205,12 @@ class App_QMainWindow(QMainWindow):
 
         dicom_node = index.internalPointer()
 
-        if not dicom_node._obj_ref_access:
+        if not dicom_node.isObjAccessible():
             return
 
         root_dicom_node = dicom_node.getRootNode().getChild(0)
-        root_dicom_path = Path(root_dicom_node._obj_ref.filename)
-        ds = dicom_node._obj_ref
+        root_dicom_path = Path(root_dicom_node.getObj().filename)
+        ds = dicom_node.getObj()
         
         ds_img = None
         if 'ReferencedFileID' in ds:

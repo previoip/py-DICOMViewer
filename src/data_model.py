@@ -18,55 +18,29 @@ from PyQt5.QtCore import (
     Qt,
 )
 
-import inspect
+from src.node import Node
 
-class IDicomPatientRecordNode:
-    def __init__(self, display_name, obj_ref=None, parent=None):
+
+
+class IDicomPatientRecordNode(Node):
+    def __init__(self, display_name, obj_weakref=None, parent=None):
+        super().__init__(parent)
         self.display_name = display_name
-        self.display_attr = {}
         self.active = False
-        self._obj_ref = obj_ref
-        self._obj_ref_access = False
-        self._parent = parent
-        self._children = []
-        self.__clear_lock = False
+        self._obj_weakref = obj_weakref
+        self._obj_weakref_access = False
 
-        if parent is not None:
-            parent.addChild(self)
+    def setObjWeakReference(self, obj_weakref):
+        self._obj_weakref = obj_weakref
 
-    def getParent(self):
-        return self._parent
+    def isObjAccessible(self):
+        return self._obj_weakref_access
+    
+    def setObjAccess(self, b):
+        self._obj_weakref_access = b
 
-    def getRootNode(self):
-        curr = self._parent
-        previous = self
-        while curr is not None:
-            previous = curr
-            curr = curr.getParent()
-        return previous
-
-    def index(self):
-        if isinstance(self._parent, self.__class__) and self._parent is not None:
-            return self._parent._children.index(self)
-        return 0
-
-    def addChild(self, child):
-        self._children.append(child)
-
-    def getChild(self, n):
-        return self._children[n]
-
-    def getChildCount(self):
-        return len(self._children)
-
-    def clear(self):
-        self.__clear_lock = True
-        for child in self._children:
-            if isinstance(child, self.__class__):
-                if not child.__clear_lock:
-                    child.clear()
-            del child
-        self._children.clear()
+    def getObj(self):
+        return self._obj_weakref
 
 class QtDataModelDicomPatientRecord(QAbstractItemModel):
     def __init__(self, dicom_node=IDicomPatientRecordNode('root')):
@@ -124,12 +98,12 @@ class QtDataModelDicomPatientRecord(QAbstractItemModel):
         row = index.row()
         status = '[x]' if dicom_node.active else '[ ]'
         if role == Qt.DisplayRole:
-            return f'{status}{row + 1}. {dicom_node.display_name}'
+            return f'{status} {row + 1}. {dicom_node.display_name}'
 
 
 def parseDicomFromPath(path, dicom_node=IDicomPatientRecordNode('root')):
 
-    def recurse(ds, root):
+    def __recurse(ds, root):
         if not isinstance(ds, Dataset):
             return
         if not hasattr(ds, 'DirectoryRecordType'):
@@ -140,20 +114,22 @@ def parseDicomFromPath(path, dicom_node=IDicomPatientRecordNode('root')):
 
         if dirtype in ['IMAGE']:
             trunk.display_name = f'<{trunk.display_name}>'
-            trunk._obj_ref_access = True
+            trunk.setObjAccess(True)
 
         if hasattr(ds, 'children'):
             for child in ds.children:
-                recurse(child, trunk)
+                __recurse(child, trunk)
 
     dicom_node.clear()
     ds = dcmread(path)
     ds.ensure_file_meta()
     main_trunk = IDicomPatientRecordNode(os.path.basename(path), ds, dicom_node)
+
     if hasattr(ds, 'patient_records'):
         for record in ds.patient_records:
-            recurse(record, main_trunk)
+            __recurse(record, main_trunk)
+
     if hasattr(ds, 'pixel_array'):
-        main_trunk._obj_ref_access = True
+        main_trunk.setObjAccess(True)
 
     return dicom_node

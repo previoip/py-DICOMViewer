@@ -14,6 +14,7 @@
 - https://dicom.nema.org/medical/dicom/current/output/html/part05.html
 - https://medimodel.com/sample-dicom-files/human_skull_2_dicom_file/
 - https://github.com/pyqt/examples
+- https://towardsdatascience.com/medical-image-pre-processing-with-python-d07694852606
 
 ## Previously
 
