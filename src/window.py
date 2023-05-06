@@ -135,8 +135,9 @@ class App_QMainWindow(QMainWindow):
         self.mplToolbar.setOrientation(Qt.Vertical)
 
     def _initFilterDicomImageFilterTree(self):
+        root = self.DicomImageFilterTree.invisibleRootItem()
         for i in range(3):
-            child = QTreeWidgetItem(self.DicomImageFilterTree)
+            child = QTreeWidgetItem(root)
             child.setText(0, f'imagefilter {i}')
             child.setText(1, f'None')
             child_filter = QTreeWidgetItem(child)

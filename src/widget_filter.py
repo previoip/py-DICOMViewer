@@ -17,15 +17,22 @@ from PyQt5.QtCore import (
 class QTreeItemWidgetFilter(QWidget):
     def __init__(self, parent=None, design_file='src/ui/filter.ui'):
         super().__init__()
-        self.parent=parent
+        if not isinstance(parent, QTreeWidgetItem):
+            raise ValueError('parent is not QTreeWidgetItem')
+        self._parent=parent
         uic.loadUi(design_file, self)
         self.setAutoFillBackground(True)
-        if isinstance(self.parent, QTreeWidgetItem):
-            flags = self.parent.flags()
-            flags &= Qt.ItemIsSelectable
-            flags &= Qt.ItemIsUserCheckable
-            flags &= Qt.ItemIsEditable
-            flags &= Qt.ItemIsDragEnabled 
-            flags &= Qt.ItemIsDropEnabled 
+        flags = self._parent.flags()
+        flags &= Qt.ItemIsSelectable
+        flags &= Qt.ItemIsUserCheckable
+        flags &= Qt.ItemIsEditable
+        flags &= Qt.ItemIsDragEnabled 
+        flags &= Qt.ItemIsDropEnabled 
+        self._parent.setFlags(flags)
+        self.buttonDelete.clicked.connect(self._delete)
 
-            self.parent.setFlags(flags)
+    def _delete(self):
+        widget_parent = self._parent.treeWidget()
+        root = widget_parent.invisibleRootItem()
+        widget_parent.removeItemWidget(self._parent, 0)
+        root.removeChild(self._parent.parent())
