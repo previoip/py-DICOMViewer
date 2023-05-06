@@ -64,24 +64,28 @@ class App_QMainWindow(QMainWindow):
     def __init__(self, design_file='./mainwindow.ui'):
 
         # mental note
-        # root attribute tree derived from mainwindow.ui:
+        # root attribute tree derived from mainwindow.ui
+        # and is accessible from parent (MainWindow)
+        # attributes:
         #
-        # MainWindow  (QMainWindow)
+        # MainWindow (QMainWindow)
         # ├── centralwidget (QWidget)
-        # │   ├── mplFrame (QFrame)
-        # │   ├── tableDicomProps (QTableWidget)
-        # │   ├── DicomImageFilterTree (QToolBox)
-        # │   ├── toolbarFrameMplCanvas (QFrame)
-        # │   └── treeViewDicomRecords (QTreeView)
+        # │   ├── buttonFilterClear (QPushButton)
+        # │   ├── buttonFilterDialog (QPushButton)
+        # │   ├── frameMplRenderWidgetContainer (QFrame)
+        # │   ├── frameToolbarWidgetContainer (QFrame)
+        # │   ├── tableViewWDicomProperty (QTableWidget)
+        # │   ├── treeViewWImageFilter (QToolBox)
+        # │   └── treeViewVDicomRecords (QTreeView)
         # └── menubar (QMenuBar)
         #     ├── menuFile (QMenu)
-        #     │   ├── actionOpen_Test (QAction)
-        #     │   ├── actionOpen (QAction)
+        #     │   ├── actionFileDialogTest (QAction)
+        #     │   ├── actionFileDialog (QAction)
         #     │   └── actionExit (QAction)
         #     └── menuAbout (QMenu)
-        #         ├── actionAbout (QAction)
-        #         ├── actionLicense (QAction)
-        #         └── actionAbout_Qt (QAction)
+        #         ├── actionModalAbout (QAction)
+        #         ├── actionModalLicense (QAction)
+        #         └── actionModalAboutQt (QAction)
         
         super().__init__()
         uic.loadUi(design_file, self)
@@ -104,45 +108,45 @@ class App_QMainWindow(QMainWindow):
     
     def _initUI(self):
         self._initMenuBars()
-        self._initTreeViewDicomRecordsWidget()
-        self._initTableDicomProps()
-        self._initMplCanvas()
-        self._initFilterDicomImageFilterTree()
+        self._initTreeViewVDicomRecordsWidget()
+        self._initTableViewWDicomProperty()
+        self._initFrameMplRenderWidgetContainer()
+        self._initTreeViewWImageFilter()
 
     def _initMenuBars(self):
         self.actionExit.triggered.connect(self._wrapperAtExit())
-        self.actionAbout.triggered.connect(self._invokeMessageBoxAbout)
-        self.actionLicense.triggered.connect(self._invokeMessageBoxLicense)
-        self.actionAbout_Qt.triggered.connect(self._invokeMessageBoxAboutQt)
-        self.actionOpen.triggered.connect(self._invokeMessageBoxAtRoot)
-        self.actionOpen_Test.triggered.connect(self._invokeFileDialogAtTest)
+        self.actionModalAbout.triggered.connect(self._invokeMessageBoxAbout)
+        self.actionModalLicense.triggered.connect(self._invokeMessageBoxLicense)
+        self.actionModalAboutQt.triggered.connect(self._invokeMessageBoxAboutQt)
+        self.actionFileDialog.triggered.connect(self._invokeMessageBoxAtRoot)
+        self.actionFileDialogTest.triggered.connect(self._invokeFileDialogAtTest)
 
-    def _initTreeViewDicomRecordsWidget(self):
-        # self.treeViewDicomRecords.activated.connect(self._handleOnItemSelect)
-        self.treeViewDicomRecords.selectionChanged = \
+    def _initTreeViewVDicomRecordsWidget(self):
+        self.treeViewVDicomRecords.selectionChanged = \
             lambda curr, prev: self._handleOnItemSelect(curr.indexes(), prev.indexes())
 
-    def _initTableDicomProps(self):
-        header = self.tableDicomProps.horizontalHeader()
+    def _initTableViewWDicomProperty(self):
+        header = self.tableViewWDicomProperty.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
 
-    def _initMplCanvas(self):
-        self.mplCanvas = WidgetMplCanvas(self.mplFrame)
-        self.mplToolbar = WidgetMplToolbar(self.mplCanvas, self.toolbarFrameMplCanvas)
+    def _initFrameMplRenderWidgetContainer(self):
+        self.mplCanvas = WidgetMplCanvas(self.frameMplRenderWidgetContainer)
+        self.mplToolbar = WidgetMplToolbar(self.mplCanvas, self.frameToolbarWidgetContainer)
         self.resize_signal.connect(self._invokeOnResizeEvent)
         self.render_signal.connect(self.invokeImageUpdate)
         self.mplToolbar.setOrientation(Qt.Vertical)
 
-    def _initFilterDicomImageFilterTree(self):
-        root = self.DicomImageFilterTree.invisibleRootItem()
+    def _initTreeViewWImageFilter(self):
+        self.buttonFilterClear.clicked.connect(self.treeViewWImageFilter.clear)
+        root = self.treeViewWImageFilter.invisibleRootItem()
         for i in range(3):
             child = QTreeWidgetItem(root)
             child.setText(0, f'imagefilter {i}')
             child.setText(1, f'None')
             child_filter = QTreeWidgetItem(child)
             widget = QTreeItemWidgetFilter(child_filter)
-            self.DicomImageFilterTree.setItemWidget(child_filter, 0, widget)
+            self.treeViewWImageFilter.setItemWidget(child_filter, 0, widget)
 
     # handlers
 
@@ -159,7 +163,7 @@ class App_QMainWindow(QMainWindow):
             prev.internalPointer().active = False
 
     def _handleLoadDsToTable(self, index):
-        table_widget = self.tableDicomProps
+        table_widget = self.tableViewWDicomProperty
         dicom_node = index.internalPointer()
 
         row = table_widget.rowCount()
@@ -227,18 +231,18 @@ class App_QMainWindow(QMainWindow):
         return wrapper
 
     def _handleAtFileOpen(self, file_path):
-        self.treeViewDicomRecords.setUpdatesEnabled(False)
+        self.treeViewVDicomRecords.setUpdatesEnabled(False)
 
-        model = self._active_model['treeViewDicomRecords']
+        model = self._active_model['treeViewVDicomRecords']
         root = model.getNode().getRootNode()
-        self.setDataModelToWidget('treeViewDicomRecords', None)
+        self.setDataModelToWidget('treeViewVDicomRecords', None)
 
         self._active_path = file_path
         parseDicomFromPath(file_path, root)
 
-        self.setDataModelToWidget('treeViewDicomRecords', model)
-        self.treeViewDicomRecords.setUpdatesEnabled(True)
-        self._active_model['treeViewDicomRecords'].layoutChanged.emit()
+        self.setDataModelToWidget('treeViewVDicomRecords', model)
+        self.treeViewVDicomRecords.setUpdatesEnabled(True)
+        self._active_model['treeViewVDicomRecords'].layoutChanged.emit()
 
     def _invokeMessageBoxAbout(self):
         QMessageBox.about(self, 'About', '')

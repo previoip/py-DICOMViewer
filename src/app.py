@@ -20,7 +20,7 @@ class QtApp:
             app_name.decode(system_encoding) + " - " + \
             app_version.decode(system_encoding)
             )
-        self._qt_win.setDataModelToWidget('treeViewDicomRecords', self._dicom_data_model)
+        self._qt_win.setDataModelToWidget('treeViewVDicomRecords', self._dicom_data_model)
 
     def postInit(self):
         self._dicom_data_root       = self._dicom_data_model.getNode().getRootNode()

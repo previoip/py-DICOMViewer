@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1080</width>
-    <height>720</height>
+    <height>721</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -39,38 +39,22 @@
     </sizepolicy>
    </property>
    <layout class="QGridLayout" name="gridLayout">
-    <item row="2" column="1" colspan="4">
-     <widget class="QTreeView" name="treeViewDicomRecords">
+    <item row="3" column="5" colspan="2">
+     <widget class="QTreeWidget" name="treeViewWImageFilter">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
       <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
+       <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
       </property>
       <property name="minimumSize">
        <size>
-        <width>0</width>
+        <width>100</width>
         <height>180</height>
        </size>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>16777215</width>
-        <height>180</height>
-       </size>
-      </property>
-      <attribute name="headerVisible">
-       <bool>false</bool>
-      </attribute>
-     </widget>
-    </item>
-    <item row="2" column="5">
-     <widget class="QTreeWidget" name="DicomImageFilterTree">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
       </property>
       <property name="maximumSize">
        <size>
@@ -108,8 +92,97 @@
       </column>
      </widget>
     </item>
-    <item row="0" column="5">
-     <widget class="QTableWidget" name="tableDicomProps">
+    <item row="0" column="1" rowspan="3" colspan="3">
+     <widget class="QFrame" name="frameMplRenderWidgetContainer">
+      <property name="frameShape">
+       <enum>QFrame::StyledPanel</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Raised</enum>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="6">
+     <widget class="QPushButton" name="buttonFilterClear">
+      <property name="maximumSize">
+       <size>
+        <width>180</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>Clear Filters</string>
+      </property>
+     </widget>
+    </item>
+    <item row="2" column="5">
+     <widget class="QPushButton" name="buttonFilterDialog">
+      <property name="maximumSize">
+       <size>
+        <width>180</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="text">
+       <string>Add New Image Filter</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="4" rowspan="3">
+     <widget class="QFrame" name="frameToolbarWidgetContainer">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>32</width>
+        <height>0</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>48</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::StyledPanel</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Raised</enum>
+      </property>
+     </widget>
+    </item>
+    <item row="3" column="1" colspan="4">
+     <widget class="QTreeView" name="treeViewVDicomRecords">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>180</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>180</height>
+       </size>
+      </property>
+      <attribute name="headerVisible">
+       <bool>false</bool>
+      </attribute>
+     </widget>
+    </item>
+    <item row="0" column="5" colspan="2">
+     <widget class="QTableWidget" name="tableViewWDicomProperty">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Maximum" vsizetype="Expanding">
         <horstretch>0</horstretch>
@@ -118,8 +191,8 @@
       </property>
       <property name="minimumSize">
        <size>
-        <width>380</width>
-        <height>0</height>
+        <width>200</width>
+        <height>200</height>
        </size>
       </property>
       <property name="maximumSize">
@@ -175,51 +248,6 @@
       </column>
      </widget>
     </item>
-    <item row="1" column="5">
-     <widget class="QPushButton" name="pushButton">
-      <property name="text">
-       <string>Add New Image Filter</string>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="4" rowspan="2">
-     <widget class="QFrame" name="toolbarFrameMplCanvas">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="minimumSize">
-       <size>
-        <width>32</width>
-        <height>0</height>
-       </size>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>48</width>
-        <height>16777215</height>
-       </size>
-      </property>
-      <property name="frameShape">
-       <enum>QFrame::StyledPanel</enum>
-      </property>
-      <property name="frameShadow">
-       <enum>QFrame::Raised</enum>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="1" rowspan="2" colspan="3">
-     <widget class="QFrame" name="mplFrame">
-      <property name="frameShape">
-       <enum>QFrame::StyledPanel</enum>
-      </property>
-      <property name="frameShadow">
-       <enum>QFrame::Raised</enum>
-      </property>
-     </widget>
-    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -235,29 +263,29 @@
     <property name="title">
      <string>File</string>
     </property>
-    <addaction name="actionOpen_Test"/>
-    <addaction name="actionOpen"/>
+    <addaction name="actionFileDialogTest"/>
+    <addaction name="actionFileDialog"/>
     <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuAbout">
     <property name="title">
      <string>About</string>
     </property>
-    <addaction name="actionAbout"/>
-    <addaction name="actionLicense"/>
+    <addaction name="actionModalAbout"/>
+    <addaction name="actionModalLicense"/>
     <addaction name="separator"/>
-    <addaction name="actionAbout_Qt"/>
+    <addaction name="actionModalAboutQt"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuAbout"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
-  <action name="actionOpen_Test">
+  <action name="actionFileDialogTest">
    <property name="text">
     <string>Open Test</string>
    </property>
   </action>
-  <action name="actionOpen">
+  <action name="actionFileDialog">
    <property name="text">
     <string>Open</string>
    </property>
@@ -265,17 +293,17 @@
     <string>Ctrl+O</string>
    </property>
   </action>
-  <action name="actionAbout">
+  <action name="actionModalAbout">
    <property name="text">
     <string>About</string>
    </property>
   </action>
-  <action name="actionLicense">
+  <action name="actionModalLicense">
    <property name="text">
     <string>License</string>
    </property>
   </action>
-  <action name="actionAbout_Qt">
+  <action name="actionModalAboutQt">
    <property name="text">
     <string>About Qt</string>
    </property>
