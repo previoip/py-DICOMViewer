@@ -4,7 +4,7 @@ import cv2 as cv
 
 
 class DicomImageFilterFlags(Flag):
-    __DEFAULT = auto()
+    DEFAULT = auto()
     IGNORE = auto()
     TRANSFORM_HU = auto()
     DILATE = auto()
@@ -53,14 +53,14 @@ class DicomImageFilterContainer:
         self.__filter_steps = []
         self.dicom_ds_wr = dicom_ds_weakref
         self.pixel_array = self.dicom_ds_wr.pixel_array
-        self.filter_flags = DicomImageFilterFlags.__DEFAULT
+        self.filter_flags = DicomImageFilterFlags.DEFAULT
 
     def setFilterFlags(self, filter_flags):
         if DicomImageFilterFlags.IGNORE in filter_flags:
             return
 
         for k in image_filters.keys():
-            if k == DicomImageFilterFlags.__DEFAULT:
+            if k == DicomImageFilterFlags.DEFAULT:
                 continue
             if k in filter_flags:
                 filter_fn = image_filters.get(k)

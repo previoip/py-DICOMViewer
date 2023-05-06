@@ -5,62 +5,24 @@ from PyQt5 import (
 
 from PyQt5.QtWidgets import (
     qApp,
-    QMainWindow,
     QWidget,
-    QDesktopWidget,
-    QMenuBar,
-    QAction,
+    QMainWindow,
+    QTableView,
+    QHeaderView,
     QMessageBox,
     QFileDialog,
-    QDirModel,
     QTableWidgetItem,
-    QHeaderView,
+    QTreeWidgetItem,
+    QLabel
 )
 
 from PyQt5.QtCore import (
     Qt,
-    QSize,
     pyqtSignal,
 )
 
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_qt5agg import (
-    FigureCanvasQTAgg as FigureCanvas,
-    NavigationToolbar2QT as NavigationToolbar,
-)
-
-# HEY
-# you might read this and asks yourself what?
-# I've found a method to exclude toolitem for
-# matplotlib navigation toolbar derived from
-# qt5agg backend. Just in case you might be 
-# wondering why, usually canvas object have 
-#      remove_toolitem()
-# bound method to remove toolbar item which 
-# is missing in the backend implementation.
-
-# but by looking at the source code, the items
-# is a class attribute on its own and thus
-# removing it is as straightforward as follows.
-
-__ti = NavigationToolbar.toolitems # or NavigationToolbar2QT.toolitems
-__ti.pop(
-    __ti.index(
-        next(filter(
-            lambda a: 'configure_subplots' in a,
-            __ti 
-        ))
-    )
-)
-
-# what the above just do uis to remove
-# 'configure_subplots' button, which in this
-# app, this toolbar always raises UserWarning
-# compat with tight_layout, which I find jarring
-
-# you can check it at the following git 
-# https://github.com/matplotlib/matplotlib/blob/main/lib/matplotlib/backends/backend_qt.py#L624
 
 from bootstrap import (
     app_prefetch_license, 
@@ -82,49 +44,15 @@ from src.dicom_image_filter import (
     DicomImageFilterFlags
 )
 
+from src.widget_matplotlib import (
+    WidgetMplToolbar,
+    WidgetMplCanvas
+)
+
+from src.widget_filter import QTreeItemWidgetFilter
+
 import os
 from pathlib import Path
-
-
-
-
-class MplCanvas(FigureCanvas):
-    def __init__(self, parent):
-        self.fig, self.ax = plt.subplots(
-            dpi=72,
-            layout="constrained"
-        )
-        super().__init__(self.fig)
-        self.__pixel_arr = []
-        self.__axImg = None
-        self.setParent(parent)
-        self.ax.margins(0)
-        self.ax.set_aspect('auto', 'datalim')
-        self.cmap = plt.cm.gray
-
-    def resizeFitToParentWidget(self):
-        parent_frame_geom = self.parent().frameGeometry()
-        self.setGeometry(parent_frame_geom)
-
-    def updateImage(self):
-        if self.__axImg is not None:
-            self.cmap = self.__axImg.get_cmap()
-        if self.__pixel_arr is None or len(self.__pixel_arr) == 0:
-            return
-        self.ax.cla()
-        self.__axImg = self.ax.imshow(self.__pixel_arr, cmap=self.cmap)
-        self.draw()
-
-    def setArr(self, pixel_arr):
-        self.__pixel_arr = pixel_arr
-
-    def dispatchSetArr(self, diocom_ds):
-        if not hasattr(diocom_ds, 'pixel_array'):
-            raise AttributeError('pixel_array attribute is not present on the given object')
-        if hasattr(diocom_ds, 'getPixelArray'):
-            self.setArr(diocom_ds.getPixelArray())
-        else:
-            self.setArr(diocom_ds.pixel_array)
 
 
 
@@ -134,6 +62,27 @@ class App_QMainWindow(QMainWindow):
     render_signal = pyqtSignal()
 
     def __init__(self, design_file='./mainwindow.ui'):
+
+        # mental note
+        # root attribute tree derived from mainwindow.ui:
+        #
+        # MainWindow  (QMainWindow)
+        # ├── centralwidget (QWidget)
+        # │   ├── mplFrame (QFrame)
+        # │   ├── tableDicomProps (QTableWidget)
+        # │   ├── DicomImageFilterTree (QToolBox)
+        # │   ├── toolbarFrameMplCanvas (QFrame)
+        # │   └── treeViewDicomRecords (QTreeView)
+        # └── menubar (QMenuBar)
+        #     ├── menuFile (QMenu)
+        #     │   ├── actionOpen_Test (QAction)
+        #     │   ├── actionOpen (QAction)
+        #     │   └── actionExit (QAction)
+        #     └── menuAbout (QMenu)
+        #         ├── actionAbout (QAction)
+        #         ├── actionLicense (QAction)
+        #         └── actionAbout_Qt (QAction)
+        
         super().__init__()
         uic.loadUi(design_file, self)
         self._initUI()
@@ -155,9 +104,10 @@ class App_QMainWindow(QMainWindow):
     
     def _initUI(self):
         self._initMenuBars()
-        self._initTreeViewWidget()
-        self._initTableWidget()
+        self._initTreeViewDicomRecordsWidget()
+        self._initTableDicomProps()
         self._initMplCanvas()
+        self._initFilterDicomImageFilterTree()
 
     def _initMenuBars(self):
         self.actionExit.triggered.connect(self._wrapperAtExit())
@@ -167,27 +117,36 @@ class App_QMainWindow(QMainWindow):
         self.actionOpen.triggered.connect(self._invokeMessageBoxAtRoot)
         self.actionOpen_Test.triggered.connect(self._invokeFileDialogAtTest)
 
-    def _initTreeViewWidget(self):
-        # self.treeView.activated.connect(self._handleOnItemSelect)
-        self.treeView.selectionChanged = \
+    def _initTreeViewDicomRecordsWidget(self):
+        # self.treeViewDicomRecords.activated.connect(self._handleOnItemSelect)
+        self.treeViewDicomRecords.selectionChanged = \
             lambda curr, prev: self._handleOnItemSelect(curr.indexes(), prev.indexes())
 
-    def _initTableWidget(self):
-        header = self.tableWidget.horizontalHeader()
+    def _initTableDicomProps(self):
+        header = self.tableDicomProps.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
 
     def _initMplCanvas(self):
-        self.MplWidget = self.frame
-        self.MplToolbarFrame = self.toolbarFrame
-        self.MplCanvas = MplCanvas(self.MplWidget)
-        self.MplToolbar = NavigationToolbar(self.MplCanvas, self.MplToolbarFrame)
+        self.mplCanvas = WidgetMplCanvas(self.mplFrame)
+        self.mplToolbar = WidgetMplToolbar(self.mplCanvas, self.toolbarFrameMplCanvas)
         self.resize_signal.connect(self._invokeOnResizeEvent)
         self.render_signal.connect(self.invokeImageUpdate)
-        self.MplToolbar.setOrientation(Qt.Vertical)
+        self.mplToolbar.setOrientation(Qt.Vertical)
+
+    def _initFilterDicomImageFilterTree(self):
+        for i in range(3):
+            child = QTreeWidgetItem(self.DicomImageFilterTree)
+            child.setText(0, f'imagefilter {i}')
+            child.setText(1, f'None')
+            child_filter = QTreeWidgetItem(child)
+            widget = QTreeItemWidgetFilter(child_filter)
+            self.DicomImageFilterTree.setItemWidget(child_filter, 0, widget)
+
+    # handlers
 
     def _invokeOnResizeEvent(self):
-        self.MplCanvas.resizeFitToParentWidget()
+        self.mplCanvas.resizeFitToParentWidget()
 
     def _handleOnItemSelect(self, current_indexes, previous_indexes):
         for curr in current_indexes:
@@ -199,7 +158,7 @@ class App_QMainWindow(QMainWindow):
             prev.internalPointer().active = False
 
     def _handleLoadDsToTable(self, index):
-        table_widget = self.tableWidget
+        table_widget = self.tableDicomProps
         dicom_node = index.internalPointer()
 
         row = table_widget.rowCount()
@@ -215,7 +174,7 @@ class App_QMainWindow(QMainWindow):
             table_widget.setItem(r, 1, QTableWidgetItem(el.repval))
 
     def _handleLoadDicomData(self, index):
-        canvas_widget = self.MplCanvas
+        canvas_widget = self.mplCanvas
 
         dicom_node = index.internalPointer()
 
@@ -244,16 +203,11 @@ class App_QMainWindow(QMainWindow):
         if ds_img is None:
             return
         filter_container = DicomImageFilterContainer(ds_img)
-        filter_flags = DicomImageFilterFlags.TRANSFORM_HU 
-        filter_flags |= DicomImageFilterFlags.DILATE 
-        filter_flags |= DicomImageFilterFlags.ERODE
-        filter_container.setFilterFlags(filter_flags)
-        # filter_container.transformToHU()
         canvas_widget.dispatchSetArr(filter_container)
         self.render_signal.emit()
 
     def invokeImageUpdate(self):
-        self.MplCanvas.updateImage()
+        self.mplCanvas.updateImage()
 
     def _wrapperAtExit(self):
         return qApp.quit
@@ -272,18 +226,18 @@ class App_QMainWindow(QMainWindow):
         return wrapper
 
     def _handleAtFileOpen(self, file_path):
-        self.treeView.setUpdatesEnabled(False)
+        self.treeViewDicomRecords.setUpdatesEnabled(False)
 
-        model = self._active_model['treeView']
+        model = self._active_model['treeViewDicomRecords']
         root = model.getNode().getRootNode()
-        self.setDataModelToWidget('treeView', None)
+        self.setDataModelToWidget('treeViewDicomRecords', None)
 
         self._active_path = file_path
         parseDicomFromPath(file_path, root)
 
-        self.setDataModelToWidget('treeView', model)
-        self.treeView.setUpdatesEnabled(True)
-        self._active_model['treeView'].layoutChanged.emit()
+        self.setDataModelToWidget('treeViewDicomRecords', model)
+        self.treeViewDicomRecords.setUpdatesEnabled(True)
+        self._active_model['treeViewDicomRecords'].layoutChanged.emit()
 
     def _invokeMessageBoxAbout(self):
         QMessageBox.about(self, 'About', '')

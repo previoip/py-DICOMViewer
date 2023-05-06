@@ -39,8 +39,43 @@
     </sizepolicy>
    </property>
    <layout class="QGridLayout" name="gridLayout">
+    <item row="1" column="1" colspan="4">
+     <widget class="QTreeView" name="treeViewDicomRecords">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>180</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>180</height>
+       </size>
+      </property>
+      <attribute name="headerVisible">
+       <bool>false</bool>
+      </attribute>
+     </widget>
+    </item>
+    <item row="0" column="1" colspan="3">
+     <widget class="QFrame" name="mplFrame">
+      <property name="frameShape">
+       <enum>QFrame::StyledPanel</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Raised</enum>
+      </property>
+     </widget>
+    </item>
     <item row="0" column="4">
-     <widget class="QFrame" name="toolbarFrame">
+     <widget class="QFrame" name="toolbarFrameMplCanvas">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
         <horstretch>0</horstretch>
@@ -67,8 +102,8 @@
       </property>
      </widget>
     </item>
-    <item row="0" column="5" rowspan="2">
-     <widget class="QTableWidget" name="tableWidget">
+    <item row="0" column="5">
+     <widget class="QTableWidget" name="tableDicomProps">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Maximum" vsizetype="Expanding">
         <horstretch>0</horstretch>
@@ -79,6 +114,12 @@
        <size>
         <width>380</width>
         <height>0</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>380</width>
+        <height>16777215</height>
        </size>
       </property>
       <property name="font">
@@ -93,7 +134,7 @@
        <bool>false</bool>
       </property>
       <property name="selectionBehavior">
-       <enum>QAbstractItemView::SelectColumns</enum>
+       <enum>QAbstractItemView::SelectItems</enum>
       </property>
       <property name="showGrid">
        <bool>true</bool>
@@ -128,33 +169,48 @@
       </column>
      </widget>
     </item>
-    <item row="0" column="1" colspan="3">
-     <widget class="QFrame" name="frame">
-      <property name="frameShape">
-       <enum>QFrame::StyledPanel</enum>
-      </property>
-      <property name="frameShadow">
-       <enum>QFrame::Raised</enum>
-      </property>
-     </widget>
-    </item>
-    <item row="1" column="1" colspan="4">
-     <widget class="QTreeView" name="treeView">
+    <item row="1" column="5">
+     <widget class="QTreeWidget" name="DicomImageFilterTree">
       <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
+       <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
       </property>
-      <property name="minimumSize">
+      <property name="maximumSize">
        <size>
-        <width>0</width>
+        <width>380</width>
         <height>180</height>
        </size>
       </property>
-      <attribute name="headerVisible">
+      <property name="dragDropOverwriteMode">
        <bool>false</bool>
-      </attribute>
+      </property>
+      <property name="dragDropMode">
+       <enum>QAbstractItemView::InternalMove</enum>
+      </property>
+      <property name="selectionBehavior">
+       <enum>QAbstractItemView::SelectItems</enum>
+      </property>
+      <property name="verticalScrollMode">
+       <enum>QAbstractItemView::ScrollPerPixel</enum>
+      </property>
+      <property name="indentation">
+       <number>10</number>
+      </property>
+      <property name="wordWrap">
+       <bool>true</bool>
+      </property>
+      <column>
+       <property name="text">
+        <string>Filters</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>Mode</string>
+       </property>
+      </column>
      </widget>
     </item>
    </layout>
