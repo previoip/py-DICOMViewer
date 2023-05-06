@@ -41,7 +41,6 @@ from pydicom import (
 
 from src.dicom_image_filter import (
     DicomImageFilterContainer,
-    DicomImageFilterFlags
 )
 
 from src.widget_matplotlib import (
@@ -139,16 +138,24 @@ class App_QMainWindow(QMainWindow):
 
     def _initTreeViewWImageFilter(self):
         self.buttonFilterClear.clicked.connect(self.treeViewWImageFilter.clear)
-        root = self.treeViewWImageFilter.invisibleRootItem()
-        for i in range(3):
-            child = QTreeWidgetItem(root)
-            child.setText(0, f'imagefilter {i}')
-            child.setText(1, f'None')
-            child_filter = QTreeWidgetItem(child)
-            widget = QTreeItemWidgetFilter(child_filter)
-            self.treeViewWImageFilter.setItemWidget(child_filter, 0, widget)
+        self._invokeNewFilter(0)
+        self._invokeNewFilter(1)
+        self._invokeNewFilter(2)
 
     # handlers
+
+    def _invokeNewFilter(self, filter_enum=0):
+        root = self.treeViewWImageFilter.invisibleRootItem()
+
+
+        child = QTreeWidgetItem(root)
+        child_filter = QTreeWidgetItem(child)
+        widget = QTreeItemWidgetFilter(child_filter, filter_enum=filter_enum)
+
+        child.setText(0, widget.filter.displayName())
+        child.setText(1, f'None')
+
+        self.treeViewWImageFilter.setItemWidget(child_filter, 0, widget)
 
     def _invokeOnResizeEvent(self):
         self.mplCanvas.resizeFitToParentWidget()

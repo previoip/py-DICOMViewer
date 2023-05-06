@@ -1,46 +1,110 @@
 import numpy as np
-from enum import Flag, auto
 import cv2 as cv
+from dataclasses import dataclass
+
+from PyQt5.QtWidgets import (
+    QLabel,
+    QSlider,
+    QDoubleSpinBox,
+)
+
+@dataclass
+class WeightProperties:
+    weight: int
+
+    def __post_init__(self):
+        self.widget = None
+
+@dataclass
+class FilterMorphologyProperties:
+    kernel_x: int
+    kernel_y: int
+    iterations: int
+
+    def __post_init__(self):
+        self.widget = None
 
 
-class DicomImageFilterFlags(Flag):
-    DEFAULT = auto()
-    IGNORE = auto()
-    TRANSFORM_HU = auto()
-    DILATE = auto()
-    ERODE = auto()
+class BaseClassImageFilter:
+    _inplace: bool = False
+    _filter_display_name: str = ''
+    _filter_display_desc: str = ''
 
-class ImageFilters:
+    def __init__(self):
+        self.properties = None
 
-    @staticmethod
-    def transformToHU(dicom_ds, pixel_array):
+    def dispatch(self, dicom_ds, pixel_array) -> np.ndarray:
+        raise NotImplementedError(f'{self.__class__} dispatch method is not yet overridden')
+
+    def isInplaceOp(self):
+        return self._inplace
+
+    def displayName(self):
+        return self._filter_display_name
+
+
+class FilterTransformToHU(BaseClassImageFilter):
+    _inplace = True
+    _filter_display_name = 'Transform2HU'
+    _filter_display_desc = 'Transform to Hounsfield Unit'
+
+    def dispatch(self, dicom_ds, pixel_array):
         if not hasattr(dicom_ds, 'RescaleIntercept'):
             return
         if not hasattr(dicom_ds, 'RescaleSlope'):
             return
-        intercept = dicom_ds.RescaleIntercept
         slope = dicom_ds.RescaleSlope
+        intercept = dicom_ds.RescaleIntercept
 
-        return pixel_array * slope + intercept
+        np.multiply(pixel_array, slope, out=pixel_array)
+        np.add(pixel_array, intercept, out=pixel_array)
 
-    @staticmethod
-    def dilate(dicom_ds, pixel_array):
-        kernel = np.ones((5,5), np.uint8)
-        return cv.dilate(pixel_array, kernel, iterations=1)
+class FilterMorphologyDilate(BaseClassImageFilter):
+    _inplace = True
+    _filter_display_name = 'Dilate'
+    _filter_display_desc = 'Dilate Morphological Operation'
 
-    @staticmethod
-    def erode(dicom_ds, pixel_array):
-        kernel = np.ones((5,5), np.uint8)
-        return cv.erode(pixel_array, kernel, iterations=1)
+    def __init__(self):
+        self.properties = FilterMorphologyProperties(5, 5, 1)
+
+    def dispatch(self, dicom_ds, pixel_array):
+        kernel = np.ones(
+            (
+                self.properties.kernel_x,
+                self.properties.kernel_y
+            ),
+            pixel_array.type
+        )
+        cv.dilate(pixel_array, kernel, pixel_array, iterations=self.properties.iterations)
+
+class FilterMorphologyErode(BaseClassImageFilter):
+    _inplace = True
+    _filter_display_name = 'Erode'
+    _filter_display_desc = 'Erode Morphological Operation'
+
+    def __init__(self):
+        self.properties = FilterMorphologyProperties(5, 5, 1)
 
 
-image_filters = {
-    DicomImageFilterFlags.TRANSFORM_HU : ImageFilters.transformToHU,
-    DicomImageFilterFlags.DILATE : ImageFilters.dilate,
-    DicomImageFilterFlags.ERODE : ImageFilters.erode,
-}
+    def dispatch(self, dicom_ds, pixel_array):
+        kernel = np.ones(
+            (
+                self.properties.kernel_x,
+                self.properties.kernel_y
+            ),
+            pixel_array.type
+        )
+        cv.dilate(pixel_array, kernel, pixel_array, iterations=self.properties.iterations)
 
 
+dicom_image_filters = [
+    FilterTransformToHU,
+    FilterMorphologyDilate,
+    FilterMorphologyErode
+]
+
+def newFilter(filter_enum):
+    return dicom_image_filters[filter_enum]()
 
 class DicomImageFilterContainer:
     def __init__(self, dicom_ds_weakref):
@@ -53,26 +117,10 @@ class DicomImageFilterContainer:
         self.__filter_steps = []
         self.dicom_ds_wr = dicom_ds_weakref
         self.pixel_array = self.dicom_ds_wr.pixel_array
-        self.filter_flags = DicomImageFilterFlags.DEFAULT
 
-    def setFilterFlags(self, filter_flags):
-        if DicomImageFilterFlags.IGNORE in filter_flags:
-            return
-
-        for k in image_filters.keys():
-            if k == DicomImageFilterFlags.DEFAULT:
-                continue
-            if k in filter_flags:
-                filter_fn = image_filters.get(k)
-                assert callable(filter_fn)
-                self.__filter_steps.append(filter_fn)
 
     def getPixelArray(self):
         ret_arr = self.pixel_array.copy()
         for fil in self.__filter_steps:
             ret_arr = fil(self.dicom_ds_wr, ret_arr)
         return ret_arr
-
-
-
-
