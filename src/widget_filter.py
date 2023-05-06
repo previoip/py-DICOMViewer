@@ -23,11 +23,11 @@ class QTreeItemWidgetFilter(QWidget):
         uic.loadUi(design_file, self)
         self.setAutoFillBackground(True)
         flags = self._parent.flags()
-        flags &= Qt.ItemIsSelectable
-        flags &= Qt.ItemIsUserCheckable
-        flags &= Qt.ItemIsEditable
-        flags &= Qt.ItemIsDragEnabled 
-        flags &= Qt.ItemIsDropEnabled 
+        flags &= not Qt.ItemIsSelectable
+        flags &= not Qt.ItemIsUserCheckable
+        flags &= not Qt.ItemIsEditable
+        flags &= not Qt.ItemIsDragEnabled 
+        flags &= not Qt.ItemIsDropEnabled 
         self._parent.setFlags(flags)
         self.buttonDelete.clicked.connect(self._delete)
 

@@ -39,7 +39,7 @@
     </sizepolicy>
    </property>
    <layout class="QGridLayout" name="gridLayout">
-    <item row="1" column="1" colspan="4">
+    <item row="2" column="1" colspan="4">
      <widget class="QTreeView" name="treeViewDicomRecords">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
@@ -64,42 +64,48 @@
       </attribute>
      </widget>
     </item>
-    <item row="0" column="1" colspan="3">
-     <widget class="QFrame" name="mplFrame">
-      <property name="frameShape">
-       <enum>QFrame::StyledPanel</enum>
-      </property>
-      <property name="frameShadow">
-       <enum>QFrame::Raised</enum>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="4">
-     <widget class="QFrame" name="toolbarFrameMplCanvas">
+    <item row="2" column="5">
+     <widget class="QTreeWidget" name="DicomImageFilterTree">
       <property name="sizePolicy">
-       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+       <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
       </property>
-      <property name="minimumSize">
-       <size>
-        <width>32</width>
-        <height>0</height>
-       </size>
-      </property>
       <property name="maximumSize">
        <size>
-        <width>48</width>
-        <height>16777215</height>
+        <width>380</width>
+        <height>180</height>
        </size>
       </property>
-      <property name="frameShape">
-       <enum>QFrame::StyledPanel</enum>
+      <property name="dragDropOverwriteMode">
+       <bool>false</bool>
       </property>
-      <property name="frameShadow">
-       <enum>QFrame::Raised</enum>
+      <property name="dragDropMode">
+       <enum>QAbstractItemView::InternalMove</enum>
       </property>
+      <property name="selectionBehavior">
+       <enum>QAbstractItemView::SelectItems</enum>
+      </property>
+      <property name="verticalScrollMode">
+       <enum>QAbstractItemView::ScrollPerPixel</enum>
+      </property>
+      <property name="indentation">
+       <number>10</number>
+      </property>
+      <property name="wordWrap">
+       <bool>true</bool>
+      </property>
+      <column>
+       <property name="text">
+        <string>Filters</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>Mode</string>
+       </property>
+      </column>
      </widget>
     </item>
     <item row="0" column="5">
@@ -170,47 +176,48 @@
      </widget>
     </item>
     <item row="1" column="5">
-     <widget class="QTreeWidget" name="DicomImageFilterTree">
+     <widget class="QPushButton" name="pushButton">
+      <property name="text">
+       <string>Add New Image Filter</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="4" rowspan="2">
+     <widget class="QFrame" name="toolbarFrameMplCanvas">
       <property name="sizePolicy">
-       <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
       </property>
-      <property name="maximumSize">
+      <property name="minimumSize">
        <size>
-        <width>380</width>
-        <height>180</height>
+        <width>32</width>
+        <height>0</height>
        </size>
       </property>
-      <property name="dragDropOverwriteMode">
-       <bool>false</bool>
+      <property name="maximumSize">
+       <size>
+        <width>48</width>
+        <height>16777215</height>
+       </size>
       </property>
-      <property name="dragDropMode">
-       <enum>QAbstractItemView::InternalMove</enum>
+      <property name="frameShape">
+       <enum>QFrame::StyledPanel</enum>
       </property>
-      <property name="selectionBehavior">
-       <enum>QAbstractItemView::SelectItems</enum>
+      <property name="frameShadow">
+       <enum>QFrame::Raised</enum>
       </property>
-      <property name="verticalScrollMode">
-       <enum>QAbstractItemView::ScrollPerPixel</enum>
+     </widget>
+    </item>
+    <item row="0" column="1" rowspan="2" colspan="3">
+     <widget class="QFrame" name="mplFrame">
+      <property name="frameShape">
+       <enum>QFrame::StyledPanel</enum>
       </property>
-      <property name="indentation">
-       <number>10</number>
+      <property name="frameShadow">
+       <enum>QFrame::Raised</enum>
       </property>
-      <property name="wordWrap">
-       <bool>true</bool>
-      </property>
-      <column>
-       <property name="text">
-        <string>Filters</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>Mode</string>
-       </property>
-      </column>
      </widget>
     </item>
    </layout>
