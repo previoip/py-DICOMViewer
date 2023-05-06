@@ -77,7 +77,10 @@ from pydicom import (
     dcmread,
 )
 
-from src.dicoom_image_filter import DicomImageFilter
+from src.dicom_image_filter import (
+    DicomImageFilterContainer,
+    DicomImageFilterFlags
+)
 
 import os
 from pathlib import Path
@@ -118,7 +121,11 @@ class MplCanvas(FigureCanvas):
     def dispatchSetArr(self, diocom_ds):
         if not hasattr(diocom_ds, 'pixel_array'):
             raise AttributeError('pixel_array attribute is not present on the given object')
-        self.setArr(diocom_ds.pixel_array)
+        if hasattr(diocom_ds, 'getPixelArray'):
+            self.setArr(diocom_ds.getPixelArray())
+        else:
+            self.setArr(diocom_ds.pixel_array)
+
 
 
 class App_QMainWindow(QMainWindow):
@@ -236,9 +243,13 @@ class App_QMainWindow(QMainWindow):
 
         if ds_img is None:
             return
-        image_filter = DicomImageFilter(ds_img)
-        image_filter.transformToHU()
-        canvas_widget.dispatchSetArr(diocom_ds)
+        filter_container = DicomImageFilterContainer(ds_img)
+        filter_flags = DicomImageFilterFlags.TRANSFORM_HU 
+        filter_flags |= DicomImageFilterFlags.DILATE 
+        filter_flags |= DicomImageFilterFlags.ERODE
+        filter_container.setFilterFlags(filter_flags)
+        # filter_container.transformToHU()
+        canvas_widget.dispatchSetArr(filter_container)
         self.render_signal.emit()
 
     def invokeImageUpdate(self):
