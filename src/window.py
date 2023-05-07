@@ -13,11 +13,14 @@ from PyQt5.QtWidgets import (
     QFileDialog,
     QTableWidgetItem,
     QTreeWidgetItem,
-    QLabel
+    QLabel,
+    QPushButton,
+    QCheckBox,
 )
 
 from PyQt5.QtCore import (
     Qt,
+    QSize,
     pyqtSignal,
 )
 
@@ -39,16 +42,16 @@ from pydicom import (
     dcmread,
 )
 
-from src.dicom_image_filter import (
-    DicomImageFilterContainer,
-)
+# from src.dicom_image_filter import (
+#     DicomImageFilterContainer,
+# )
 
 from src.widget_matplotlib import (
     WidgetMplToolbar,
     WidgetMplCanvas
 )
 
-from src.widget_filter import QTreeItemWidgetFilter
+from src.widget_filter import QTreeItemWidgetFilter, _filters
 
 import os
 from pathlib import Path
@@ -137,7 +140,8 @@ class App_QMainWindow(QMainWindow):
         self.mplToolbar.setOrientation(Qt.Vertical)
 
     def _initTreeViewWImageFilter(self):
-        self.buttonFilterClear.clicked.connect(self.treeViewWImageFilter.clear)
+        self.treeViewWImageFilter.resizeColumnToContents(0)
+        self.treeViewWImageFilter.resizeColumnToContents(1)
         self._invokeNewFilter(0)
         self._invokeNewFilter(1)
         self._invokeNewFilter(2)
@@ -147,15 +151,25 @@ class App_QMainWindow(QMainWindow):
     def _invokeNewFilter(self, filter_enum=0):
         root = self.treeViewWImageFilter.invisibleRootItem()
 
-
         child = QTreeWidgetItem(root)
         child_filter = QTreeWidgetItem(child)
         widget = QTreeItemWidgetFilter(child_filter, filter_enum=filter_enum)
+        destructorButton = QPushButton()
+        destructorButton.setMaximumSize(QSize(16, 16))
+        enableCheckBox = QCheckBox('')
+        enableCheckBox.setChecked(True)
+        enableCheckBox.stateChanged.connect(
+            lambda x: widget.setEnabled(enableCheckBox.isChecked())
+        )
 
-        child.setText(0, widget.filter.displayName())
-        child.setText(1, f'None')
-
+        destructorButton.clicked.connect(widget._delete)
+        self.treeViewWImageFilter.setItemWidget(child, 0, enableCheckBox)
+        self.treeViewWImageFilter.setItemWidget(child, 1, destructorButton)
         self.treeViewWImageFilter.setItemWidget(child_filter, 0, widget)
+        widget.filter_signal.connect(self.render_signal.emit)
+
+
+        child.setText(2, widget.filter.displayName())
 
     def _invokeOnResizeEvent(self):
         self.mplCanvas.resizeFitToParentWidget()
@@ -214,11 +228,24 @@ class App_QMainWindow(QMainWindow):
 
         if ds_img is None:
             return
-        filter_container = DicomImageFilterContainer(ds_img)
-        canvas_widget.dispatchSetArr(filter_container)
+
+        canvas_widget.dispatchSetArr(ds_img)
         self.render_signal.emit()
 
     def invokeImageUpdate(self):
+        ds =  self.mplCanvas.getDsWr()
+        arr = ds.pixel_array.copy()
+
+
+        for i in self.treeViewWImageFilter.selectedItems():
+            print(i)
+        print()
+        for f in _filters:
+            if f.isInplaceOp():
+                f.dispatch(ds, arr)
+            else:
+                arr = f.dispatch(ds, arr)
+        self.mplCanvas.setArr(arr)
         self.mplCanvas.updateImage()
 
     def _wrapperAtExit(self):

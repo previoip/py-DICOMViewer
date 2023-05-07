@@ -3,17 +3,42 @@ import cv2 as cv
 from dataclasses import dataclass
 
 from PyQt5.QtWidgets import (
+    QGroupBox,
     QLabel,
     QSlider,
+    QSpinBox,
     QDoubleSpinBox,
+    QFormLayout,
 )
+
+from PyQt5.QtCore import pyqtSignal
 
 @dataclass
 class WeightProperties:
     weight: int
 
     def __post_init__(self):
-        self.widget = None
+        self.widget_constructors = [
+            self.__widget_weight,
+        ]
+
+    def hasWidget(self):
+        return len(self.widget_constructors) > 0
+
+    def buildWidget(self, parent, formLayout):
+        for row, fn in enumerate(self.widget_constructors):
+            fn(row, parent, formLayout)
+
+    def __widget_weight(self, row, parent, formLayout):
+        label = QLabel(parent)
+        label.setText('weight')
+        formLayout.setWidget(row, QFormLayout.LabelRole, label)
+        spinbox = QSpinBox(parent)
+        spinbox.setValue(self.weight)
+        formLayout.setWidget(row, QFormLayout.FieldRole, spinbox)
+        spinbox.valueChanged.connect(parent.filter_signal.emit)
+
+
 
 @dataclass
 class FilterMorphologyProperties:
@@ -22,13 +47,53 @@ class FilterMorphologyProperties:
     iterations: int
 
     def __post_init__(self):
-        self.widget = None
+        self.widget_constructors = [
+            self.__widget_kernelx,
+            self.__widget_kernely,
+            self.__widget_iteration,
+        ]
 
+    def hasWidget(self):
+        return len(self.widget_constructors) > 0
+
+    def buildWidget(self, parent, formLayout):
+        for row, fn in enumerate(self.widget_constructors):
+            fn(row, parent, formLayout)
+
+    def __widget_kernelx(self, row, parent, formLayout):
+        label = QLabel(parent)
+        label.setText('kernel x')
+        formLayout.setWidget(row, QFormLayout.LabelRole, label)
+        spinbox = QSpinBox(parent)
+        spinbox.setValue(self.kernel_x)
+        spinbox.valueChanged.connect(lambda _: aetattr(self, 'kernel_x', spinbox.value()))
+        formLayout.setWidget(row, QFormLayout.FieldRole, spinbox)
+        spinbox.valueChanged.connect(parent.filter_signal.emit)
+
+    def __widget_kernely(self, row, parent, formLayout):
+        label = QLabel(parent)
+        label.setText('kernel y')
+        formLayout.setWidget(row, QFormLayout.LabelRole, label)
+        spinbox = QSpinBox(parent)
+        spinbox.setValue(self.kernel_y)
+        spinbox.valueChanged.connect(lambda _: setattr(self, 'kernel_y', spinbox.value()))
+        formLayout.setWidget(row, QFormLayout.FieldRole, spinbox)
+        spinbox.valueChanged.connect(parent.filter_signal.emit)
+
+    def __widget_iteration(self, row, parent, formLayout):
+        label = QLabel(parent)
+        label.setText('iteration')
+        formLayout.setWidget(row, QFormLayout.LabelRole, label)
+        spinbox = QSpinBox(parent)
+        spinbox.setValue(self.iterations)
+        spinbox.valueChanged.connect(lambda _: setattr(self, 'iterations', spinbox.value()))
+        formLayout.setWidget(row, QFormLayout.FieldRole, spinbox)
+        spinbox.valueChanged.connect(parent.filter_signal.emit)
 
 class BaseClassImageFilter:
     _inplace: bool = False
-    _filter_display_name: str = ''
-    _filter_display_desc: str = ''
+    _display_name: str = ''
+    _display_desc: str = ''
 
     def __init__(self):
         self.properties = None
@@ -40,13 +105,16 @@ class BaseClassImageFilter:
         return self._inplace
 
     def displayName(self):
-        return self._filter_display_name
+        return self._display_name
 
 
 class FilterTransformToHU(BaseClassImageFilter):
-    _inplace = True
-    _filter_display_name = 'Transform2HU'
-    _filter_display_desc = 'Transform to Hounsfield Unit'
+    _inplace = False
+    _display_name = 'Transform2HU'
+    _display_desc = 'Transform to Hounsfield Unit'
+
+    def __init__(self):
+        super().__init__()
 
     def dispatch(self, dicom_ds, pixel_array):
         if not hasattr(dicom_ds, 'RescaleIntercept'):
@@ -56,13 +124,15 @@ class FilterTransformToHU(BaseClassImageFilter):
         slope = dicom_ds.RescaleSlope
         intercept = dicom_ds.RescaleIntercept
 
-        np.multiply(pixel_array, slope, out=pixel_array)
-        np.add(pixel_array, intercept, out=pixel_array)
+        # np.multiply(pixel_array, slope, out=pixel_array)
+        # np.add(pixel_array, intercept, out=pixel_array)
+        return pixel_array * slope + intercept
+
 
 class FilterMorphologyDilate(BaseClassImageFilter):
     _inplace = True
-    _filter_display_name = 'Dilate'
-    _filter_display_desc = 'Dilate Morphological Operation'
+    _display_name = 'Dilate'
+    _display_desc = 'Dilate Morphological Operation'
 
     def __init__(self):
         self.properties = FilterMorphologyProperties(5, 5, 1)
@@ -73,18 +143,17 @@ class FilterMorphologyDilate(BaseClassImageFilter):
                 self.properties.kernel_x,
                 self.properties.kernel_y
             ),
-            pixel_array.type
+            pixel_array.dtype
         )
         cv.dilate(pixel_array, kernel, pixel_array, iterations=self.properties.iterations)
 
 class FilterMorphologyErode(BaseClassImageFilter):
     _inplace = True
-    _filter_display_name = 'Erode'
-    _filter_display_desc = 'Erode Morphological Operation'
+    _display_name = 'Erode'
+    _display_desc = 'Erode Morphological Operation'
 
     def __init__(self):
         self.properties = FilterMorphologyProperties(5, 5, 1)
-
 
     def dispatch(self, dicom_ds, pixel_array):
         kernel = np.ones(
@@ -92,9 +161,9 @@ class FilterMorphologyErode(BaseClassImageFilter):
                 self.properties.kernel_x,
                 self.properties.kernel_y
             ),
-            pixel_array.type
+            pixel_array.dtype
         )
-        cv.dilate(pixel_array, kernel, pixel_array, iterations=self.properties.iterations)
+        cv.erode(pixel_array, kernel, pixel_array, iterations=self.properties.iterations)
 
 
 dicom_image_filters = [
@@ -103,24 +172,7 @@ dicom_image_filters = [
     FilterMorphologyErode
 ]
 
+
+
 def newFilter(filter_enum):
     return dicom_image_filters[filter_enum]()
-
-class DicomImageFilterContainer:
-    def __init__(self, dicom_ds_weakref):
-        if not hasattr(dicom_ds_weakref, 'pixel_array'):
-            raise AttributeError('pixel_array attribute is not present on the given object')
-
-        if not isinstance(dicom_ds_weakref.pixel_array, np.ndarray):
-            raise ValueError(f'pixel_array is not instance of numpy ndarray')
-
-        self.__filter_steps = []
-        self.dicom_ds_wr = dicom_ds_weakref
-        self.pixel_array = self.dicom_ds_wr.pixel_array
-
-
-    def getPixelArray(self):
-        ret_arr = self.pixel_array.copy()
-        for fil in self.__filter_steps:
-            ret_arr = fil(self.dicom_ds_wr, ret_arr)
-        return ret_arr

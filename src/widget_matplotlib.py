@@ -53,6 +53,7 @@ class WidgetMplCanvas(FigureCanvas):
         super().__init__(self.fig)
         self.__pixel_arr = []
         self.__axImg = None
+        self.__dicom_ds_wr = None
         self.setParent(parent)
         self.ax.margins(0)
         self.ax.set_aspect('auto', 'datalim')
@@ -74,9 +75,17 @@ class WidgetMplCanvas(FigureCanvas):
     def setArr(self, pixel_arr):
         self.__pixel_arr = pixel_arr
 
+    def getDsWr(self):
+        return self.__dicom_ds_wr
+
+    def setDsWr(self, obj):
+        self.__dicom_ds_wr = obj
+
+
     def dispatchSetArr(self, diocom_ds):
         if not hasattr(diocom_ds, 'pixel_array'):
             raise AttributeError('pixel_array attribute is not present on the given object')
+        self.setDsWr(diocom_ds)
         if hasattr(diocom_ds, 'getPixelArray'):
             self.setArr(diocom_ds.getPixelArray())
         else:

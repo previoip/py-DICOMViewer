@@ -80,14 +80,31 @@
       <property name="wordWrap">
        <bool>true</bool>
       </property>
+      <attribute name="headerMinimumSectionSize">
+       <number>5</number>
+      </attribute>
+      <attribute name="headerStretchLastSection">
+       <bool>true</bool>
+      </attribute>
       <column>
        <property name="text">
-        <string>Filters</string>
+        <string>👁️</string>
+       </property>
+       <property name="textAlignment">
+        <set>AlignCenter</set>
        </property>
       </column>
       <column>
        <property name="text">
-        <string>Mode</string>
+        <string>❌</string>
+       </property>
+       <property name="textAlignment">
+        <set>AlignCenter</set>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>Name</string>
        </property>
       </column>
      </widget>
