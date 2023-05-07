@@ -66,7 +66,7 @@ class FilterMorphologyProperties:
         formLayout.setWidget(row, QFormLayout.LabelRole, label)
         spinbox = QSpinBox(parent)
         spinbox.setValue(self.kernel_x)
-        spinbox.valueChanged.connect(lambda _: aetattr(self, 'kernel_x', spinbox.value()))
+        spinbox.valueChanged.connect(lambda _: setattr(self, 'kernel_x', spinbox.value()))
         formLayout.setWidget(row, QFormLayout.FieldRole, spinbox)
         spinbox.valueChanged.connect(parent.filter_signal.emit)
 

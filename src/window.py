@@ -51,7 +51,7 @@ from src.widget_matplotlib import (
     WidgetMplCanvas
 )
 
-from src.widget_filter import QTreeItemWidgetFilter, _filters
+from src.widget_filter import QTreeItemWidgetFilter
 
 import os
 from pathlib import Path
@@ -154,20 +154,21 @@ class App_QMainWindow(QMainWindow):
         child = QTreeWidgetItem(root)
         child_filter = QTreeWidgetItem(child)
         widget = QTreeItemWidgetFilter(child_filter, filter_enum=filter_enum)
+        widget.filter_signal.connect(self.render_signal.emit)
+        self.treeViewWImageFilter.setItemWidget(child_filter, 0, widget)
+        
         destructorButton = QPushButton()
         destructorButton.setMaximumSize(QSize(16, 16))
+        destructorButton.clicked.connect(widget._delete)
+        self.treeViewWImageFilter.setItemWidget(child, 1, destructorButton)
+        
         enableCheckBox = QCheckBox('')
         enableCheckBox.setChecked(True)
         enableCheckBox.stateChanged.connect(
-            lambda x: widget.setEnabled(enableCheckBox.isChecked())
+            lambda _: widget.setEnabled(enableCheckBox.isChecked())
         )
-
-        destructorButton.clicked.connect(widget._delete)
+        enableCheckBox.stateChanged.connect(self.render_signal.emit)
         self.treeViewWImageFilter.setItemWidget(child, 0, enableCheckBox)
-        self.treeViewWImageFilter.setItemWidget(child, 1, destructorButton)
-        self.treeViewWImageFilter.setItemWidget(child_filter, 0, widget)
-        widget.filter_signal.connect(self.render_signal.emit)
-
 
         child.setText(2, widget.filter.displayName())
 
@@ -233,18 +234,29 @@ class App_QMainWindow(QMainWindow):
         self.render_signal.emit()
 
     def invokeImageUpdate(self):
+
         ds =  self.mplCanvas.getDsWr()
+        if ds is None:
+            return
         arr = ds.pixel_array.copy()
 
+        root = self.treeViewWImageFilter.invisibleRootItem()
+        for i in range(root.childCount()):
+            filterTreeItem = root.child(i)
+            filterItem = filterTreeItem.child(0)
+            filterWidget = self.treeViewWImageFilter.itemWidget(filterItem, 0)
+            if not filterWidget.isEnabled():
+                continue
 
-        for i in self.treeViewWImageFilter.selectedItems():
-            print(i)
-        print()
-        for f in _filters:
-            if f.isInplaceOp():
-                f.dispatch(ds, arr)
+            fil = filterWidget.filter
+            if fil is None:
+                continue
+
+            if fil.isInplaceOp():
+                fil.dispatch(ds, arr)
             else:
-                arr = f.dispatch(ds, arr)
+                arr = fil.dispatch(ds, arr)
+
         self.mplCanvas.setArr(arr)
         self.mplCanvas.updateImage()
 

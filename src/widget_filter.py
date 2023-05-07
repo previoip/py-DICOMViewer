@@ -17,7 +17,6 @@ from src.dicom_image_filter import (
     dicom_image_filters,
     newFilter
 )
-_filters = []
 
 class QTreeItemWidgetFilter(QWidget):
 
@@ -41,8 +40,6 @@ class QTreeItemWidgetFilter(QWidget):
 
         self.formLayout = self.layout()
         self.filter = newFilter(filter_enum)
-        global _filters
-        _filters.append(self.filter)
         if self.filter.properties is not None \
             and self.filter.properties.hasWidget():
             self.filter.properties.buildWidget(self, self.formLayout)
@@ -52,5 +49,4 @@ class QTreeItemWidgetFilter(QWidget):
         root = widget_parent.invisibleRootItem()
         widget_parent.removeItemWidget(self._parent, 0)
         root.removeChild(self._parent.parent())
-        global _filters
-        _filters.pop(_filters.index(self.filter))
+        self.filter_signal.emit()
