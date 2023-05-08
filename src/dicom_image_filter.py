@@ -107,6 +107,9 @@ class BaseClassImageFilter:
     def displayName(self):
         return self._display_name
 
+    def displayDesc(self):
+        return self._display_desc
+
 
 class FilterTransformToHU(BaseClassImageFilter):
     _inplace = False

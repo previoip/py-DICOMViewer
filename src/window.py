@@ -42,9 +42,9 @@ from pydicom import (
     dcmread,
 )
 
-# from src.dicom_image_filter import (
-#     DicomImageFilterContainer,
-# )
+from src.dialog_filterenum import (
+    FilterEnumDialog,
+)
 
 from src.widget_matplotlib import (
     WidgetMplToolbar,
@@ -114,6 +114,7 @@ class App_QMainWindow(QMainWindow):
         self._initTableViewWDicomProperty()
         self._initFrameMplRenderWidgetContainer()
         self._initTreeViewWImageFilter()
+        self._initFilterEnumDialog()
 
     def _initMenuBars(self):
         self.actionExit.triggered.connect(self._wrapperAtExit())
@@ -142,9 +143,7 @@ class App_QMainWindow(QMainWindow):
     def _initTreeViewWImageFilter(self):
         self.treeViewWImageFilter.resizeColumnToContents(0)
         self.treeViewWImageFilter.resizeColumnToContents(1)
-        self._invokeNewFilter(0)
-        self._invokeNewFilter(1)
-        self._invokeNewFilter(2)
+        self.buttonFilterDialog.clicked.connect(self._handleOnFilterEnumDialogInvoked)
 
     # handlers
 
@@ -160,6 +159,7 @@ class App_QMainWindow(QMainWindow):
         destructorButton = QPushButton()
         destructorButton.setMaximumSize(QSize(16, 16))
         destructorButton.clicked.connect(widget._delete)
+        self.buttonFilterClear.clicked.connect(widget._delete)
         self.treeViewWImageFilter.setItemWidget(child, 1, destructorButton)
         
         enableCheckBox = QCheckBox('')
@@ -174,6 +174,15 @@ class App_QMainWindow(QMainWindow):
 
     def _invokeOnResizeEvent(self):
         self.mplCanvas.resizeFitToParentWidget()
+
+    def _initFilterEnumDialog(self):
+        self._filterEnumDialog = FilterEnumDialog(self)
+        self._filterEnumDialog.finished.connect(lambda _: self._invokeNewFilter(self._filterEnumDialog.res()))
+        self._filterEnumDialog.finished.connect(self.render_signal.emit)
+
+    def _handleOnFilterEnumDialogInvoked(self):
+        self._filterEnumDialog.resetStates()
+        self._filterEnumDialog.exec()
 
     def _handleOnItemSelect(self, current_indexes, previous_indexes):
         for curr in current_indexes:
@@ -234,7 +243,6 @@ class App_QMainWindow(QMainWindow):
         self.render_signal.emit()
 
     def invokeImageUpdate(self):
-
         ds =  self.mplCanvas.getDsWr()
         if ds is None:
             return
