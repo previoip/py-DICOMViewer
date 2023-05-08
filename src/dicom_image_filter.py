@@ -13,8 +13,16 @@ from PyQt5.QtWidgets import (
 
 from PyQt5.QtCore import pyqtSignal
 
+class BaseProperties:
+    def hasWidget(self):
+        return len(self.widget_constructors) > 0
+    
+    def buildWidget(self, parent, formLayout):
+        for row, fn in enumerate(self.widget_constructors):
+            fn(row, parent, formLayout)
+
 @dataclass
-class WeightProperties:
+class WeightProperties(BaseProperties):
     weight: int
 
     def __post_init__(self):
@@ -22,26 +30,18 @@ class WeightProperties:
             self.__widget_weight,
         ]
 
-    def hasWidget(self):
-        return len(self.widget_constructors) > 0
-
-    def buildWidget(self, parent, formLayout):
-        for row, fn in enumerate(self.widget_constructors):
-            fn(row, parent, formLayout)
-
     def __widget_weight(self, row, parent, formLayout):
         label = QLabel(parent)
         label.setText('weight')
         formLayout.setWidget(row, QFormLayout.LabelRole, label)
-        spinbox = QSpinBox(parent)
+        spinbox = QDoubleSpinBox(parent)
         spinbox.setValue(self.weight)
         formLayout.setWidget(row, QFormLayout.FieldRole, spinbox)
         spinbox.valueChanged.connect(parent.filter_signal.emit)
 
 
-
 @dataclass
-class FilterMorphologyProperties:
+class FilterMorphologyProperties(BaseProperties):
     kernel_x: int
     kernel_y: int
     iterations: int
@@ -52,13 +52,6 @@ class FilterMorphologyProperties:
             self.__widget_kernely,
             self.__widget_iteration,
         ]
-
-    def hasWidget(self):
-        return len(self.widget_constructors) > 0
-
-    def buildWidget(self, parent, formLayout):
-        for row, fn in enumerate(self.widget_constructors):
-            fn(row, parent, formLayout)
 
     def __widget_kernelx(self, row, parent, formLayout):
         label = QLabel(parent)
@@ -89,6 +82,41 @@ class FilterMorphologyProperties:
         spinbox.valueChanged.connect(lambda _: setattr(self, 'iterations', spinbox.value()))
         formLayout.setWidget(row, QFormLayout.FieldRole, spinbox)
         spinbox.valueChanged.connect(parent.filter_signal.emit)
+
+
+@dataclass
+class WindowingProperties(BaseProperties):
+    width: int
+    level: int
+
+    def __post_init__(self):
+        self.widget_constructors = [
+            self.__widget_level,
+            self.__widget_width,
+        ]
+
+    def __widget_level(self, row, parent, formLayout):
+        label = QLabel(parent)
+        label.setText('level')
+        formLayout.setWidget(row, QFormLayout.LabelRole, label)
+        spinbox = QSpinBox(parent)
+        spinbox.setValue(self.level)
+        spinbox.setMaximum(9999)
+        spinbox.valueChanged.connect(lambda _: setattr(self, 'level', spinbox.value()))
+        formLayout.setWidget(row, QFormLayout.FieldRole, spinbox)
+        spinbox.valueChanged.connect(parent.filter_signal.emit)
+
+    def __widget_width(self, row, parent, formLayout):
+        label = QLabel(parent)
+        label.setText('width')
+        formLayout.setWidget(row, QFormLayout.LabelRole, label)
+        spinbox = QSpinBox(parent)
+        spinbox.setValue(self.width)
+        spinbox.setMaximum(9999)
+        spinbox.valueChanged.connect(lambda _: setattr(self, 'width', spinbox.value()))
+        formLayout.setWidget(row, QFormLayout.FieldRole, spinbox)
+        spinbox.valueChanged.connect(parent.filter_signal.emit)
+
 
 class BaseClassImageFilter:
     _inplace: bool = False
@@ -132,10 +160,26 @@ class FilterTransformToHU(BaseClassImageFilter):
         return pixel_array * slope + intercept
 
 
+class FilterWindowing(BaseClassImageFilter):
+    _inplace = False
+    _display_name = 'CTWindowing'
+    _display_desc = 'numpy Threshold-like HU Gray Level Mapping'
+
+    def __init__(self):
+        self.properties = WindowingProperties(40, 48)
+
+    def dispatch(self, dicom_ds, pixel_array):
+        img_min = self.properties.level - self.properties.width // 2
+        img_max = self.properties.level + self.properties.width // 2
+        pixel_array[pixel_array < img_min] = img_min
+        pixel_array[pixel_array > img_max] = img_max
+        return pixel_array
+
+
 class FilterMorphologyDilate(BaseClassImageFilter):
     _inplace = True
     _display_name = 'Dilate'
-    _display_desc = 'Dilate Morphological Operation'
+    _display_desc = 'opencv2 Dilate Morphological Operation'
 
     def __init__(self):
         self.properties = FilterMorphologyProperties(5, 5, 1)
@@ -153,7 +197,7 @@ class FilterMorphologyDilate(BaseClassImageFilter):
 class FilterMorphologyErode(BaseClassImageFilter):
     _inplace = True
     _display_name = 'Erode'
-    _display_desc = 'Erode Morphological Operation'
+    _display_desc = 'opencv2 Erode Morphological Operation'
 
     def __init__(self):
         self.properties = FilterMorphologyProperties(5, 5, 1)
@@ -171,11 +215,10 @@ class FilterMorphologyErode(BaseClassImageFilter):
 
 dicom_image_filters = [
     FilterTransformToHU,
+    FilterWindowing,
     FilterMorphologyDilate,
     FilterMorphologyErode
 ]
-
-
 
 def newFilter(filter_enum):
     return dicom_image_filters[filter_enum]()

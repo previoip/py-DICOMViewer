@@ -44,7 +44,8 @@ class FilterEnumDialog(QDialog):
             self.__items.append(QTableWidgetItem(fil._display_desc))
             self.tableWidget.setItem(n, 1, self.__items[-1])
 
-        self.tableWidget.itemClicked.connect(self._scan)
+        self.tableWidget.itemClicked.connect(self._singleClicked)
+        self.tableWidget.itemDoubleClicked.connect(self._doubleClicked)
 
     def resetStates(self):
         self.__button_ok.setEnabled(False)
@@ -52,9 +53,13 @@ class FilterEnumDialog(QDialog):
         for i in self.__items:
             i.setSelected(False)
 
-    def _scan(self, item):
+    def _singleClicked(self, item):
         self.__res = item.row()
         self.__button_ok.setEnabled(item.isSelected())
 
+    def _doubleClicked(self, item):
+        self.__res = item.row()
+        self.accept()
+    
     def res(self):
         return self.__res

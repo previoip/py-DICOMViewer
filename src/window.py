@@ -162,7 +162,7 @@ class App_QMainWindow(QMainWindow):
         self.buttonFilterClear.clicked.connect(widget._delete)
         self.treeViewWImageFilter.setItemWidget(child, 1, destructorButton)
         
-        enableCheckBox = QCheckBox('')
+        enableCheckBox = QCheckBox()
         enableCheckBox.setChecked(True)
         enableCheckBox.stateChanged.connect(
             lambda _: widget.setEnabled(enableCheckBox.isChecked())
