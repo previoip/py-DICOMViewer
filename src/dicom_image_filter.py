@@ -13,6 +13,32 @@ from PyQt5.QtWidgets import (
 
 from PyQt5.QtCore import pyqtSignal
 
+class PropertyWidget:
+    @staticmethod
+    def newLabel(row, formLayout, text, parent=None):
+        label = QLabel(parent)
+        label.setText(text)
+        formLayout.setWidget(row, QFormLayout.LabelRole, label)
+        return label
+
+    @staticmethod
+    def newSpinBox(row, formLayout, prop, attr, parent=None):
+        spinbox = QSpinBox(parent)
+        spinbox.setValue(getattr(prop, attr))
+        spinbox.valueChanged.connect(lambda _: setattr(prop, attr, spinbox.value()))
+        formLayout.setWidget(row, QFormLayout.FieldRole, spinbox)
+        return spinbox
+
+    @staticmethod
+    def newDoubleSpinBox(row, formLayout, prop, attr, parent=None):
+        spinbox = QDoubleSpinBox(parent)
+        spinbox.setValue(getattr(prop, attr))
+        spinbox.valueChanged.connect(lambda _: setattr(prop, attr, spinbox.value()))
+        formLayout.setWidget(row, QFormLayout.FieldRole, spinbox)
+        return spinbox
+
+
+
 class BaseProperties:
     def hasWidget(self):
         return len(self.widget_constructors) > 0
@@ -54,33 +80,18 @@ class FilterMorphologyProperties(BaseProperties):
         ]
 
     def __widget_kernelx(self, row, parent, formLayout):
-        label = QLabel(parent)
-        label.setText('kernel x')
-        formLayout.setWidget(row, QFormLayout.LabelRole, label)
-        spinbox = QSpinBox(parent)
-        spinbox.setValue(self.kernel_x)
-        spinbox.valueChanged.connect(lambda _: setattr(self, 'kernel_x', spinbox.value()))
-        formLayout.setWidget(row, QFormLayout.FieldRole, spinbox)
+        label = PropertyWidget.newLabel(row, formLayout, 'kernel x')
+        spinbox = PropertyWidget.newSpinBox(row, formLayout, self, 'kernel_x')
         spinbox.valueChanged.connect(parent.filter_signal.emit)
 
     def __widget_kernely(self, row, parent, formLayout):
-        label = QLabel(parent)
-        label.setText('kernel y')
-        formLayout.setWidget(row, QFormLayout.LabelRole, label)
-        spinbox = QSpinBox(parent)
-        spinbox.setValue(self.kernel_y)
-        spinbox.valueChanged.connect(lambda _: setattr(self, 'kernel_y', spinbox.value()))
-        formLayout.setWidget(row, QFormLayout.FieldRole, spinbox)
+        label = PropertyWidget.newLabel(row, formLayout, 'kernel y')
+        spinbox = PropertyWidget.newSpinBox(row, formLayout, self, 'kernel_y')
         spinbox.valueChanged.connect(parent.filter_signal.emit)
 
     def __widget_iteration(self, row, parent, formLayout):
-        label = QLabel(parent)
-        label.setText('iteration')
-        formLayout.setWidget(row, QFormLayout.LabelRole, label)
-        spinbox = QSpinBox(parent)
-        spinbox.setValue(self.iterations)
-        spinbox.valueChanged.connect(lambda _: setattr(self, 'iterations', spinbox.value()))
-        formLayout.setWidget(row, QFormLayout.FieldRole, spinbox)
+        label = PropertyWidget.newLabel(row, formLayout, 'iterations')
+        spinbox = PropertyWidget.newSpinBox(row, formLayout, self, 'iterations')
         spinbox.valueChanged.connect(parent.filter_signal.emit)
 
 
@@ -96,25 +107,15 @@ class WindowingProperties(BaseProperties):
         ]
 
     def __widget_level(self, row, parent, formLayout):
-        label = QLabel(parent)
-        label.setText('level')
-        formLayout.setWidget(row, QFormLayout.LabelRole, label)
-        spinbox = QSpinBox(parent)
-        spinbox.setValue(self.level)
+        label = PropertyWidget.newLabel(row, formLayout, 'level')
+        spinbox = PropertyWidget.newSpinBox(row, formLayout, self, 'level')
         spinbox.setMaximum(9999)
-        spinbox.valueChanged.connect(lambda _: setattr(self, 'level', spinbox.value()))
-        formLayout.setWidget(row, QFormLayout.FieldRole, spinbox)
         spinbox.valueChanged.connect(parent.filter_signal.emit)
 
     def __widget_width(self, row, parent, formLayout):
-        label = QLabel(parent)
-        label.setText('width')
-        formLayout.setWidget(row, QFormLayout.LabelRole, label)
-        spinbox = QSpinBox(parent)
-        spinbox.setValue(self.width)
+        label = PropertyWidget.newLabel(row, formLayout, 'width')
+        spinbox = PropertyWidget.newSpinBox(row, formLayout, self, 'width')
         spinbox.setMaximum(9999)
-        spinbox.valueChanged.connect(lambda _: setattr(self, 'width', spinbox.value()))
-        formLayout.setWidget(row, QFormLayout.FieldRole, spinbox)
         spinbox.valueChanged.connect(parent.filter_signal.emit)
 
 
