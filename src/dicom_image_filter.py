@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import (
     QSpinBox,
     QDoubleSpinBox,
     QFormLayout,
+    QCheckBox,
 )
 
 from PyQt5.QtCore import pyqtSignal
@@ -33,11 +34,23 @@ class PropertyWidget:
     def newDoubleSpinBox(row, formLayout, prop, attr, parent=None):
         spinbox = QDoubleSpinBox(parent)
         spinbox.setValue(getattr(prop, attr))
+        spinbox.setSingleStep(.01)
         spinbox.valueChanged.connect(lambda _: setattr(prop, attr, spinbox.value()))
         formLayout.setWidget(row, QFormLayout.FieldRole, spinbox)
         return spinbox
 
+    @staticmethod
+    def newCheckBox(row, formLayout, prop, attr, parent=None):
+        checkbox = QCheckBox(parent)
+        checkbox.setCheckState(getattr(prop, attr))
+        checkbox.stateChanged.connect(lambda _: setattr(prop, attr, checkbox.checkState()))
+        formLayout.setWidget(row, QFormLayout.FieldRole, checkbox)
+        return checkbox
 
+def wrapOdd(num):
+    if num != 0 and num % 2 == 0:
+        return num // 2 + 1
+    return num
 
 class BaseProperties:
     def hasWidget(self):
@@ -95,6 +108,57 @@ class FilterMorphologyProperties(BaseProperties):
         spinbox.valueChanged.connect(parent.filter_signal.emit)
 
 
+@dataclass
+class FilterKMeansClusterProperties(BaseProperties):
+    invert: bool = False
+    gaussian_kernel_size: int = 0
+    ncluster: int = 4
+    maxiter: int = 10
+    epsilon: float = 1.0
+
+    def __post_init__(self):
+        self.widget_constructors = [
+            self.__widget_invert,
+            self.__widget_gaussianblur,
+            self.__widget_ncluster,
+            self.__widget_maxiter,
+            self.__widget_epsilon,
+        ]
+
+    def __widget_ncluster(self, row, parent, formLayout):
+        label = PropertyWidget.newLabel(row, formLayout, 'n cluster')
+        spinbox = PropertyWidget.newSpinBox(row, formLayout, self, 'ncluster')
+        spinbox.setMaximum(20)
+        spinbox.setMinimum(1)
+        spinbox.valueChanged.connect(parent.filter_signal.emit)
+
+    def __widget_maxiter(self, row, parent, formLayout):
+        label = PropertyWidget.newLabel(row, formLayout, 'max iter')
+        spinbox = PropertyWidget.newSpinBox(row, formLayout, self, 'maxiter')
+        spinbox.setMinimum(1)
+        spinbox.valueChanged.connect(parent.filter_signal.emit)
+
+    def __widget_epsilon(self, row, parent, formLayout):
+        label = PropertyWidget.newLabel(row, formLayout, 'epsilon')
+        spinbox = PropertyWidget.newDoubleSpinBox(row, formLayout, self, 'epsilon')
+        spinbox.setMaximum(1.0)
+        spinbox.setMinimum(0.0)
+        spinbox.valueChanged.connect(parent.filter_signal.emit)
+
+    def __widget_invert(self, row, parent, formLayout):
+        label = PropertyWidget.newLabel(row, formLayout, 'invert')
+        checkbox = PropertyWidget.newCheckBox(row, formLayout, self, 'invert')
+        checkbox.stateChanged.connect(parent.filter_signal.emit)
+
+    def __widget_gaussianblur(self, row, parent, formLayout):
+        label = PropertyWidget.newLabel(row, formLayout, 'gaussian blur k size')
+        spinbox = PropertyWidget.newSpinBox(row, formLayout, self, 'gaussian_kernel_size')
+        spinbox.setMinimum(0)
+        spinbox.setMaximum(200)
+        spinbox.valueChanged.connect(parent.filter_signal.emit)
+
+
+        
 @dataclass
 class WindowingProperties(BaseProperties):
     width: int
@@ -161,6 +225,49 @@ class FilterTransformToHU(BaseClassImageFilter):
         return pixel_array * slope + intercept
 
 
+class FilterKMeansClustering(BaseClassImageFilter):
+    _inplace = False
+    _display_name = 'KMeansClusteringMask'
+    _display_desc = 'opencv K-Means Clustering Masking'
+
+    def __init__(self):
+        super().__init__()
+        self.properties = FilterKMeansClusterProperties()
+
+    def dispatch(self, dicom_ds, pixel_array):
+        # a rough implemetation copied from this article without using scikit-image
+        # https://stackoverflow.com/questions/52802910/opencv-color-segmentation-using-kmeans
+
+        criteria = (
+            cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER,
+            self.properties.maxiter,
+            self.properties.epsilon
+        )
+
+        h, w  = pixel_array.shape
+        pixel_array_cp = pixel_array.copy()
+        if self.properties.gaussian_kernel_size > 0:
+            gaussian_kernel_size = self.properties.gaussian_kernel_size * 2 + 1
+            cv.GaussianBlur(pixel_array_cp, (gaussian_kernel_size, gaussian_kernel_size), 0, pixel_array_cp) 
+
+        pixel_array_1d = pixel_array_cp.reshape(h*w, 1)
+
+        Z = np.float32(pixel_array_1d)
+        K = self.properties.ncluster
+
+        _, labels, centers = cv.kmeans(Z, K, None, criteria, 10, cv.KMEANS_PP_CENTERS)
+        label_count = np.bincount(labels.ravel().astype(int))
+        label_count[0] = 0
+
+        mask = (labels == label_count.argmax()).astype(float)
+
+        mask = mask.reshape(h, w)
+
+        if self.properties.invert:
+            mask = 1 - mask
+
+        return pixel_array * mask
+
 class FilterWindowing(BaseClassImageFilter):
     _inplace = False
     _display_name = 'CTWindowing'
@@ -218,7 +325,8 @@ dicom_image_filters = [
     FilterTransformToHU,
     FilterWindowing,
     FilterMorphologyDilate,
-    FilterMorphologyErode
+    FilterMorphologyErode,
+    FilterKMeansClustering
 ]
 
 def newFilter(filter_enum):
